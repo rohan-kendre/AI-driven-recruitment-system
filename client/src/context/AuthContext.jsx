@@ -1,5 +1,8 @@
-import { useState } from 'react'
-import { AuthContext } from './authContext.js'
+import { useState, createContext } from 'react'
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext(null)
+
 const demoStudent = { name: 'Aarav Kulkarni', initials: 'AK', role: 'STUDENT' }
 export function AuthProvider({ children }) {
   // useState: controls mock frontend session state until Phase 1.
