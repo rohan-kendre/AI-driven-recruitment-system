@@ -1,0 +1,2 @@
+export function notFoundMiddleware(request, _response, next) { const error = new Error('Route not found: ' + request.method + ' ' + request.originalUrl); error.statusCode = 404; next(error) }
+export function errorMiddleware(error, _request, response, _next) { const status = error.statusCode || 500; response.status(status).json({ success: false, message: status === 500 ? 'An unexpected error occurred' : error.message }) }
