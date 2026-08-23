@@ -1,3 +1,30 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { Button } from '../components/ui.jsx'
-export function PublicLayout() { return <div className="min-h-screen bg-slate-50"><header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8"><NavLink to="/" className="flex items-center gap-2 text-lg font-bold text-slate-900"><span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white">N</span>NexHire</NavLink><div className="flex gap-2"><NavLink to="/login"><Button variant="ghost">Sign in</Button></NavLink><NavLink to="/register"><Button>Get started</Button></NavLink></div></header><main><Outlet /></main></div> }
+import { NavLink, Outlet } from "react-router-dom";
+import { Button } from "../components/ui.jsx";
+export function PublicLayout() {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+        <NavLink
+          to="/"
+          className="flex items-center gap-2 text-lg font-bold text-slate-900"
+        >
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white">
+            N
+          </span>
+          NexHire
+        </NavLink>
+        <div className="flex gap-2">
+          <NavLink to="/login">
+            <Button variant="ghost">Sign in</Button>
+          </NavLink>
+          <NavLink to="/register">
+            <Button>Get started</Button>
+          </NavLink>
+        </div>
+      </header>
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  );
+}

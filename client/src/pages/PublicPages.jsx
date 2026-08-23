@@ -1,7 +1,131 @@
-import { useForm } from 'react-hook-form'
-import { NavLink, useNavigate } from 'react-router-dom'
-import { Button, Card, Input } from '../components/ui.jsx'
-import { useAuth } from '../hooks/useAuth.jsx'
-export function LandingPage() { return <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.1fr_.9fr]"><section><p className="mb-5 inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">Campus recruitment, made clearer</p><h1 className="max-w-2xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-6xl">Better placement journeys start with one calm workspace.</h1><p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">NexHire connects students, colleges, and recruiters through thoughtful workflows and responsible AI assistance.</p><div className="mt-8 flex flex-wrap gap-3"><NavLink to="/student"><Button>View student workspace</Button></NavLink><NavLink to="/register"><Button variant="secondary">Create an account</Button></NavLink></div></section><Card className="border-indigo-100 bg-gradient-to-br from-indigo-700 to-slate-950 p-7 text-white"><p className="text-sm font-semibold text-indigo-200">One placement platform</p><p className="mt-6 text-3xl font-semibold leading-tight">Know what matters. Focus on what is next.</p><div className="mt-10 grid grid-cols-2 gap-3"><div className="rounded-xl bg-white/10 p-4"><p className="text-2xl font-bold">82</p><p className="mt-1 text-sm text-indigo-100">Resume readiness</p></div><div className="rounded-xl bg-white/10 p-4"><p className="text-2xl font-bold">4</p><p className="mt-1 text-sm text-indigo-100">Active applications</p></div></div></Card></div> }
-function AccountForm({ registerMode = false }) { const navigate = useNavigate(); const { login } = useAuth(); const { register, handleSubmit, formState: { errors } } = useForm(); const submit = () => { login(); navigate('/student') }; return <Card className="mx-auto mt-10 max-w-md p-7 sm:mt-16 sm:p-9"><p className="text-sm font-semibold text-indigo-600">{registerMode ? 'Start your placement journey' : 'Welcome back'}</p><h1 className="mt-2 text-3xl font-bold tracking-tight">{registerMode ? 'Create your account' : 'Sign in to NexHire'}</h1><p className="mt-2 text-sm text-slate-500">Mock frontend form for the Phase 0 demonstration.</p><form className="mt-7 space-y-4" onSubmit={handleSubmit(submit)}>{registerMode && <Input label="Full name" placeholder="Your name" {...register('name', { required: 'Name is required' })} />}{errors.name && <p className="text-xs text-rose-600">{errors.name.message}</p>}<Input label="College email" type="email" placeholder="you@college.edu" {...register('email', { required: 'Email is required' })} />{errors.email && <p className="text-xs text-rose-600">{errors.email.message}</p>}<Input label="Password" type="password" placeholder="••••••••" {...register('password', { required: 'Password is required' })} />{registerMode && <label className="block text-sm font-medium text-slate-700">Role<select className="focus-ring mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5" {...register('role')}><option>Student</option><option>Recruiter</option></select></label>}<Button className="w-full" type="submit">{registerMode ? 'Explore demo workspace' : 'Continue to dashboard'}</Button></form><p className="mt-6 text-center text-sm text-slate-500">{registerMode ? 'Already registered?' : 'New to NexHire?'} <NavLink className="font-semibold text-indigo-600" to={registerMode ? '/login' : '/register'}>{registerMode ? 'Sign in' : 'Create an account'}</NavLink></p></Card> }
-export function LoginPage() { return <AccountForm /> } export function RegisterPage() { return <AccountForm registerMode /> }
+import { useForm } from "react-hook-form";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Button, Card, Input } from "../components/ui.jsx";
+import { useAuth } from "../hooks/useAuth.jsx";
+export function LandingPage() {
+  return (
+    <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.1fr_.9fr]">
+      <section>
+        <p className="mb-5 inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
+          Campus recruitment, made clearer
+        </p>
+        <h1 className="max-w-2xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-6xl">
+          Better placement journeys start with one calm workspace.
+        </h1>
+        <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
+          NexHire connects students, colleges, and recruiters through thoughtful
+          workflows and responsible AI assistance.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <NavLink to="/student">
+            <Button>View student workspace</Button>
+          </NavLink>
+          <NavLink to="/register">
+            <Button variant="secondary">Create an account</Button>
+          </NavLink>
+        </div>
+      </section>
+      <Card className="border-indigo-100 bg-gradient-to-br from-indigo-700 to-slate-950 p-7 text-white">
+        <p className="text-sm font-semibold text-indigo-200">
+          One placement platform
+        </p>
+        <p className="mt-6 text-3xl font-semibold leading-tight">
+          Know what matters. Focus on what is next.
+        </p>
+        <div className="mt-10 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-white/10 p-4">
+            <p className="text-2xl font-bold">82</p>
+            <p className="mt-1 text-sm text-indigo-100">Resume readiness</p>
+          </div>
+          <div className="rounded-xl bg-white/10 p-4">
+            <p className="text-2xl font-bold">4</p>
+            <p className="mt-1 text-sm text-indigo-100">Active applications</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+function AccountForm({ registerMode = false }) {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+  const submit = () => {
+    login();
+    navigate("/student");
+  };
+  return (
+    <Card className="mx-auto mt-10 max-w-md p-7 sm:mt-16 sm:p-9">
+      <p className="text-sm font-semibold text-indigo-600">
+        {registerMode ? "Start your placement journey" : "Welcome back"}
+      </p>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight">
+        {registerMode ? "Create your account" : "Sign in to NexHire"}
+      </h1>
+      <p className="mt-2 text-sm text-slate-500">
+        Mock frontend form for the Phase 0 demonstration.
+      </p>
+      <form className="mt-7 space-y-4" onSubmit={handleSubmit(submit)}>
+        {registerMode && (
+          <Input
+            label="Full name"
+            placeholder="Your name"
+            {...register("name", { required: "Name is required" })}
+          />
+        )}
+        {errors.name && (
+          <p className="text-xs text-rose-600">{errors.name.message}</p>
+        )}
+        <Input
+          label="College email"
+          type="email"
+          placeholder="you@college.edu"
+          {...register("email", { required: "Email is required" })}
+        />
+        {errors.email && (
+          <p className="text-xs text-rose-600">{errors.email.message}</p>
+        )}
+        <Input
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          {...register("password", { required: "Password is required" })}
+        />
+        {registerMode && (
+          <label className="block text-sm font-medium text-slate-700">
+            Role
+            <select
+              className="focus-ring mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5"
+              {...register("role")}
+            >
+              <option>Student</option>
+              <option>Recruiter</option>
+            </select>
+          </label>
+        )}
+        <Button className="w-full" type="submit">
+          {registerMode ? "Explore demo workspace" : "Continue to dashboard"}
+        </Button>
+      </form>
+      <p className="mt-6 text-center text-sm text-slate-500">
+        {registerMode ? "Already registered?" : "New to NexHire?"}{" "}
+        <NavLink
+          className="font-semibold text-indigo-600"
+          to={registerMode ? "/login" : "/register"}
+        >
+          {registerMode ? "Sign in" : "Create an account"}
+        </NavLink>
+      </p>
+    </Card>
+  );
+}
+export function LoginPage() {
+  return <AccountForm />;
+}
+export function RegisterPage() {
+  return <AccountForm registerMode />;
+}
