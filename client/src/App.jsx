@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { DashboardLayout } from "./layouts/DashboardLayout.jsx";
 import { PublicLayout } from "./layouts/PublicLayout.jsx";
-import { LandingPage, LoginPage, RegisterPage } from "./pages/PublicPages.jsx";
+import { LandingPage, LoginPage, RegisterPage, NotFoundPage } from "./pages/PublicPages.jsx";
 import { RecruiterPage } from "./pages/RecruiterPage.jsx";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage.jsx";
 const titles = {
@@ -34,6 +34,7 @@ export default function App() {
           <Route path="/student" element={<StudentDashboardPage />} />
           <Route path="/recruiter" element={<RecruiterPage />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
   );
