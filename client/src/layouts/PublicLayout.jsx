@@ -6,6 +6,9 @@ export function PublicLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const isAuth =
+    location.pathname === "/login" || location.pathname === "/register";
+  const isLogin = location.pathname === "/login";
 
   const closeMenu = () => setMobileMenuOpen(false);
 
@@ -33,7 +36,7 @@ export function PublicLayout() {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links (Homepage only) */}
           {isHome && (
             <nav className="hidden items-center gap-8 md:flex">
               <a
@@ -63,93 +66,141 @@ export function PublicLayout() {
             </nav>
           )}
 
-          {/* Desktop Right Actions */}
-          <div className="hidden items-center gap-2.5 sm:flex">
-            <Link to="/login">
-              <Button variant="ghost" className="px-3.5 py-2 text-xs sm:text-sm">
-                Sign in
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="primary" className="px-4 py-2 text-xs sm:text-sm">
-                Get started
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 sm:hidden">
-            <Link to="/register">
-              <Button variant="primary" className="px-3 py-1.5 text-xs">
-                Get started
-              </Button>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="focus-ring grid h-9 w-9 place-items-center rounded-lg border border-[#E4E7EF] bg-white text-[#0B1020]"
-              aria-label="Toggle navigation menu"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
+          {/* Actions for Auth Pages */}
+          {isAuth ? (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/"
+                className="text-xs sm:text-sm font-medium text-[#56627A] hover:text-[#0B1020] transition-colors flex items-center gap-1"
               >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
+                <span>←</span> Back to website
+              </Link>
+              <span className="h-4 w-px bg-[#E4E7EF] hidden sm:inline-block" />
+              {isLogin ? (
+                <div className="flex items-center gap-2">
+                  <span className="hidden md:inline text-xs text-[#56627A]">
+                    New here?
+                  </span>
+                  <Link to="/register">
+                    <Button
+                      variant="secondary"
+                      className="px-3.5 py-1.5 text-xs sm:text-sm"
+                    >
+                      Create account
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="hidden md:inline text-xs text-[#56627A]">
+                    Registered?
+                  </span>
+                  <Link to="/login">
+                    <Button
+                      variant="secondary"
+                      className="px-3.5 py-1.5 text-xs sm:text-sm"
+                    >
+                      Sign in
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Actions for Homepage and other public pages */
+            <>
+              <div className="hidden items-center gap-2.5 sm:flex">
+                <Link to="/login">
+                  <Button
+                    variant="ghost"
+                    className="px-3.5 py-2 text-xs sm:text-sm"
+                  >
+                    Sign in
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button
+                    variant="primary"
+                    className="px-4 py-2 text-xs sm:text-sm"
+                  >
+                    Get started
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Mobile Menu Button for Homepage */}
+              <div className="flex items-center gap-2 sm:hidden">
+                <Link to="/register">
+                  <Button variant="primary" className="px-3 py-1.5 text-xs">
+                    Get started
+                  </Button>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="focus-ring grid h-9 w-9 place-items-center rounded-lg border border-[#E4E7EF] bg-white text-[#0B1020]"
+                  aria-label="Toggle navigation menu"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                  >
+                    {mobileMenuOpen ? (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    ) : (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                      />
+                    )}
+                  </svg>
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
+        {/* Mobile Dropdown Menu (Homepage only) */}
+        {mobileMenuOpen && isHome && (
           <div className="border-b border-[#E4E7EF] bg-white px-5 py-4 sm:hidden">
-            {isHome && (
-              <div className="flex flex-col space-y-3 pb-4">
-                <a
-                  href="#overview"
-                  onClick={closeMenu}
-                  className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
-                >
-                  Overview
-                </a>
-                <a
-                  href="#workflow"
-                  onClick={closeMenu}
-                  className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
-                >
-                  Workflow
-                </a>
-                <a
-                  href="#showcase"
-                  onClick={closeMenu}
-                  className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
-                >
-                  Platform
-                </a>
-                <a
-                  href="#perspectives"
-                  onClick={closeMenu}
-                  className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
-                >
-                  Perspectives
-                </a>
-              </div>
-            )}
+            <div className="flex flex-col space-y-3 pb-4">
+              <a
+                href="#overview"
+                onClick={closeMenu}
+                className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
+              >
+                Overview
+              </a>
+              <a
+                href="#workflow"
+                onClick={closeMenu}
+                className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
+              >
+                Workflow
+              </a>
+              <a
+                href="#showcase"
+                onClick={closeMenu}
+                className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
+              >
+                Platform
+              </a>
+              <a
+                href="#perspectives"
+                onClick={closeMenu}
+                className="text-sm font-medium text-[#56627A] hover:text-[#0B1020]"
+              >
+                Perspectives
+              </a>
+            </div>
             <div className="flex flex-col gap-2 pt-2 border-t border-[#E4E7EF]">
               <Link to="/login" onClick={closeMenu}>
                 <Button variant="secondary" className="w-full justify-center">
