@@ -512,6 +512,16 @@ export function StudentDashboardPage() {
               ))
             )}
           </div>
+
+          <div className="mt-4 border-t border-[#E4E7EF] pt-3 text-center">
+            <Link
+              to="/student/jobs"
+              className="text-xs font-semibold text-[#5146E5] hover:underline inline-flex items-center gap-1"
+            >
+              <span>Explore All Campus Opportunities</span>
+              <span>→</span>
+            </Link>
+          </div>
         </Card>
       </section>
 
