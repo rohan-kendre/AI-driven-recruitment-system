@@ -3,50 +3,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Card, Input } from "../components/ui.jsx";
 import { useAuth } from "../hooks/useAuth.jsx";
-export function LandingPage() {
-  return (
-    <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.1fr_.9fr]">
-      <section>
-        <p className="mb-5 inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
-          Campus recruitment, made clearer
-        </p>
-        <h1 className="max-w-2xl text-4xl font-bold leading-tight tracking-tight text-slate-950 sm:text-6xl">
-          Better placement journeys start with one calm workspace.
-        </h1>
-        <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
-          NexHire connects students, colleges, and recruiters through thoughtful
-          workflows and responsible AI assistance.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link to="/student">
-            <Button>View student workspace</Button>
-          </Link>
-          <Link to="/register">
-            <Button variant="secondary">Create an account</Button>
-          </Link>
-        </div>
-      </section>
-      <Card className="border-indigo-100 bg-gradient-to-br from-indigo-700 to-slate-950 p-7 text-white">
-        <p className="text-sm font-semibold text-indigo-200">
-          One placement platform
-        </p>
-        <p className="mt-6 text-3xl font-semibold leading-tight">
-          Know what matters. Focus on what is next.
-        </p>
-        <div className="mt-10 grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">82</p>
-            <p className="mt-1 text-sm text-indigo-100">Resume readiness</p>
-          </div>
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">4</p>
-            <p className="mt-1 text-sm text-indigo-100">Active applications</p>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-}
+export { LandingPage } from "./LandingPage.jsx";
 function AccountForm({ registerMode = false }) {
   const navigate = useNavigate();
   const { login } = useAuth();

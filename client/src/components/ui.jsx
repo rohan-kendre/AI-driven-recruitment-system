@@ -1,14 +1,18 @@
 import { useId } from "react";
 export function Button({ className = "", variant = "primary", ...props }) {
   const styles = {
-    primary: "bg-indigo-600 text-white hover:bg-indigo-700",
+    primary:
+      "bg-[#5146E5] text-white hover:bg-[#4338CA] active:scale-[0.99] shadow-subtle",
     secondary:
-      "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-    ghost: "text-slate-600 hover:bg-slate-100",
+      "border border-[#E4E7EF] bg-white text-[#0B1020] hover:bg-[#F7F8FC] hover:border-[#D1D5E3] active:scale-[0.99]",
+    ghost: "text-[#56627A] hover:text-[#0B1020] hover:bg-slate-100/80",
+    dark: "bg-[#0B1020] text-white hover:bg-[#1C2438] active:scale-[0.99] shadow-subtle",
+    outlineDark:
+      "border border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30 active:scale-[0.99]",
   };
   return (
     <button
-      className={`focus-ring inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${styles[variant]} ${className}`}
+      className={`focus-ring inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${styles[variant] || styles.primary} ${className}`}
       {...props}
     />
   );
