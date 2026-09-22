@@ -338,7 +338,13 @@ export function StudentDashboardPage() {
 
           <div className="mt-4 pt-3 border-t border-[#E4E7EF] flex items-center justify-between text-xs text-[#56627A]">
             <span>Showing {rows.length} of 4 applications</span>
-            <span className="text-[11px]">Updated in real time</span>
+            <Link
+              to="/student/applications"
+              className="font-semibold text-[#5146E5] hover:underline flex items-center gap-1"
+            >
+              <span>View all applications</span>
+              <span>→</span>
+            </Link>
           </div>
         </Card>
 
