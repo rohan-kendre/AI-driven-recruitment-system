@@ -5,13 +5,17 @@ import { PublicLayout } from "./layouts/PublicLayout.jsx";
 import { LandingPage, LoginPage, RegisterPage, NotFoundPage } from "./pages/PublicPages.jsx";
 import { RecruiterPage } from "./pages/RecruiterPage.jsx";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage.jsx";
+import { StudentProfilePage } from "./pages/StudentProfilePage.jsx";
+
 const titles = {
   "/": "NexHire | Campus recruitment, made clearer",
   "/login": "Sign in | NexHire",
   "/register": "Create account | NexHire",
   "/student": "Student dashboard | NexHire",
+  "/student/profile": "My Profile | NexHire",
   "/recruiter": "Recruiter workspace | NexHire",
 };
+
 function PageTitle() {
   const { pathname } = useLocation();
   // useEffect: handles the document title side effect for each route.
@@ -20,6 +24,7 @@ function PageTitle() {
   }, [pathname]);
   return null;
 }
+
 export default function App() {
   return (
     <>
@@ -32,6 +37,7 @@ export default function App() {
         </Route>
         <Route element={<DashboardLayout />}>
           <Route path="/student" element={<StudentDashboardPage />} />
+          <Route path="/student/profile" element={<StudentProfilePage />} />
           <Route path="/recruiter" element={<RecruiterPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
