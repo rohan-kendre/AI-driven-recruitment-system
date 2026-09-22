@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useReducer, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge, Card, SearchField } from "../components/ui.jsx";
 import {
@@ -180,9 +180,15 @@ export function StudentDashboardPage() {
 
           <div className="mt-6 border-t border-[#E4E7EF] pt-4 flex items-center justify-between text-xs text-[#56627A]">
             <span>Resume v2.4 (Active for applications)</span>
-            <span className="font-semibold text-[#5146E5]">
-              1 Advisory Suggestion Available
-            </span>
+            <Link
+              to="/student/resume"
+              className="font-semibold text-[#5146E5] hover:underline flex items-center gap-1"
+            >
+              <span>View ATS Analysis</span>
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+              </svg>
+            </Link>
           </div>
         </div>
 

@@ -708,7 +708,7 @@ export function StudentProfilePage() {
             </div>
 
             <Link
-              to="/student"
+              to="/student/resume"
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#E4E7EF] bg-white py-2.5 text-xs font-semibold text-[#0B1020] hover:bg-[#F7F8FC] hover:border-[#5146E5] transition-colors"
             >
               <span>View Resume & ATS Insights</span>
