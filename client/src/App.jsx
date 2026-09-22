@@ -6,6 +6,7 @@ import { LandingPage, LoginPage, RegisterPage, NotFoundPage } from "./pages/Publ
 import { RecruiterPage } from "./pages/RecruiterPage.jsx";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage.jsx";
 import { StudentProfilePage } from "./pages/StudentProfilePage.jsx";
+import { ResumeATSPage } from "./pages/ResumeATSPage.jsx";
 
 const titles = {
   "/": "NexHire | Campus recruitment, made clearer",
@@ -13,6 +14,7 @@ const titles = {
   "/register": "Create account | NexHire",
   "/student": "Student dashboard | NexHire",
   "/student/profile": "My Profile | NexHire",
+  "/student/resume": "Resume & ATS | NexHire",
   "/recruiter": "Recruiter workspace | NexHire",
 };
 
@@ -38,6 +40,7 @@ export default function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/student" element={<StudentDashboardPage />} />
           <Route path="/student/profile" element={<StudentProfilePage />} />
+          <Route path="/student/resume" element={<ResumeATSPage />} />
           <Route path="/recruiter" element={<RecruiterPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
