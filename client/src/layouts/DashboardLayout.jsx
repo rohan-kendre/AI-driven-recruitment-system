@@ -193,6 +193,45 @@ const tpoNavItems = [
   },
 ];
 
+const adminNavItems = [
+  {
+    label: "Overview",
+    to: "/admin",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Users",
+    to: "/admin",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Approvals",
+    to: "/admin",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Audit Log",
+    to: "/admin",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+];
+
 export function DashboardLayout() {
   // useState: controls the responsive sidebar drawer.
   const [open, setOpen] = useState(false);
@@ -208,39 +247,48 @@ export function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const isTpo = location.pathname.startsWith("/tpo");
-  const isRecruiter = !isTpo && location.pathname.startsWith("/recruiter");
-  const currentNavItems = isTpo ? tpoNavItems : isRecruiter ? recruiterNavItems : navItems;
+  const isAdmin = location.pathname.startsWith("/admin");
+  const isTpo = !isAdmin && location.pathname.startsWith("/tpo");
+  const isRecruiter = !isAdmin && !isTpo && location.pathname.startsWith("/recruiter");
+  const currentNavItems = isAdmin
+    ? adminNavItems
+    : isTpo
+      ? tpoNavItems
+      : isRecruiter
+        ? recruiterNavItems
+        : navItems;
 
-  const currentSection = isTpo
+  const currentSection = isAdmin
     ? "Overview"
-    : isRecruiter
-      ? location.pathname === "/recruiter/company"
-        ? "Company"
-        : location.pathname === "/recruiter/jobs"
-          ? "Jobs"
-          : location.pathname === "/recruiter/candidates"
-            ? "Candidates"
-            : location.pathname === "/recruiter/applications"
-              ? "Applications"
-              : location.pathname === "/recruiter/interviews"
-                ? "Interviews"
-                : location.pathname === "/recruiter/offers"
-                  ? "Offers"
-                  : "Overview"
-      : location.pathname === "/student/profile"
-        ? "My Profile"
-        : location.pathname === "/student/resume"
-          ? "Resume & ATS"
-          : location.pathname === "/student/jobs"
-            ? "Jobs & Opportunities"
-            : location.pathname === "/student/applications"
-              ? "Applications"
-              : location.pathname === "/student/interviews"
-                ? "Interviews"
-                : location.pathname === "/student/offers"
-                  ? "Offers"
-                  : "Overview";
+    : isTpo
+      ? "Overview"
+      : isRecruiter
+        ? location.pathname === "/recruiter/company"
+          ? "Company"
+          : location.pathname === "/recruiter/jobs"
+            ? "Jobs"
+            : location.pathname === "/recruiter/candidates"
+              ? "Candidates"
+              : location.pathname === "/recruiter/applications"
+                ? "Applications"
+                : location.pathname === "/recruiter/interviews"
+                  ? "Interviews"
+                  : location.pathname === "/recruiter/offers"
+                    ? "Offers"
+                    : "Overview"
+        : location.pathname === "/student/profile"
+          ? "My Profile"
+          : location.pathname === "/student/resume"
+            ? "Resume & ATS"
+            : location.pathname === "/student/jobs"
+              ? "Jobs & Opportunities"
+              : location.pathname === "/student/applications"
+                ? "Applications"
+                : location.pathname === "/student/interviews"
+                  ? "Interviews"
+                  : location.pathname === "/student/offers"
+                    ? "Offers"
+                    : "Overview";
 
   return (
     <div className="min-h-screen bg-[#F7F8FC] font-sans text-[#0B1020]">
@@ -255,7 +303,7 @@ export function DashboardLayout() {
         {/* Brand Area */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-white/10">
           <NavLink
-            to={isTpo ? "/tpo" : isRecruiter ? "/recruiter" : "/student"}
+            to={isAdmin ? "/admin" : isTpo ? "/tpo" : isRecruiter ? "/recruiter" : "/student"}
             className="flex items-center gap-2.5"
             onClick={() => setOpen(false)}
           >
@@ -267,7 +315,7 @@ export function DashboardLayout() {
                 NexHire
               </span>
               <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-indigo-300">
-                {isTpo ? "Placement Office" : isRecruiter ? "Recruiter" : "Student"}
+                {isAdmin ? "Admin" : isTpo ? "Placement Office" : isRecruiter ? "Recruiter" : "Student"}
               </span>
             </div>
           </NavLink>
@@ -284,35 +332,39 @@ export function DashboardLayout() {
         {/* Main Navigation Links */}
         <div className="px-3 py-4">
           <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            {isTpo
-              ? "Institutional Navigation"
-              : isRecruiter
-                ? "Recruitment Navigation"
-                : "Placement Navigation"}
+            {isAdmin
+              ? "Platform Governance"
+              : isTpo
+                ? "Institutional Navigation"
+                : isRecruiter
+                  ? "Recruitment Navigation"
+                  : "Placement Navigation"}
           </p>
           <nav className="space-y-1">
             {currentNavItems.map((item) => {
-              const isActive = isTpo
-                ? item.label === "Overview" && location.pathname === "/tpo"
-                : isRecruiter
-                  ? item.label === "Overview"
-                    ? location.pathname === "/recruiter"
-                    : item.to !== "/recruiter" && location.pathname === item.to
-                  : item.to === "/student/profile"
-                    ? location.pathname === "/student/profile"
-                    : item.to === "/student/resume"
-                      ? location.pathname === "/student/resume"
-                      : item.to === "/student/jobs"
-                        ? location.pathname === "/student/jobs"
-                        : item.to === "/student/applications"
-                          ? location.pathname === "/student/applications"
-                          : item.to === "/student/interviews"
-                            ? location.pathname === "/student/interviews"
-                            : item.to === "/student/offers"
-                              ? location.pathname === "/student/offers"
-                              : item.label === "Overview"
-                                ? location.pathname === "/student"
-                                : false;
+              const isActive = isAdmin
+                ? item.label === "Overview" && location.pathname === "/admin"
+                : isTpo
+                  ? item.label === "Overview" && location.pathname === "/tpo"
+                  : isRecruiter
+                    ? item.label === "Overview"
+                      ? location.pathname === "/recruiter"
+                      : item.to !== "/recruiter" && location.pathname === item.to
+                    : item.to === "/student/profile"
+                      ? location.pathname === "/student/profile"
+                      : item.to === "/student/resume"
+                        ? location.pathname === "/student/resume"
+                        : item.to === "/student/jobs"
+                          ? location.pathname === "/student/jobs"
+                          : item.to === "/student/applications"
+                            ? location.pathname === "/student/applications"
+                            : item.to === "/student/interviews"
+                              ? location.pathname === "/student/interviews"
+                              : item.to === "/student/offers"
+                                ? location.pathname === "/student/offers"
+                                : item.label === "Overview"
+                                  ? location.pathname === "/student"
+                                  : false;
 
               return (
                 <Link
@@ -352,18 +404,20 @@ export function DashboardLayout() {
           <div className="flex items-center justify-between rounded-xl p-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#5146E5] text-xs font-bold text-white shadow-subtle">
-                {isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
+                {isAdmin ? "AS" : isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
               </span>
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold text-white">
-                  {isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
+                  {isAdmin ? "Aditi Sen" : isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
                 </p>
                 <p className="truncate text-[10px] text-slate-400">
-                  {isTpo
-                    ? "HEAD OF TPO · Somaiya Institutions"
-                    : isRecruiter
-                      ? "RECRUITER · Acme Technologies"
-                      : `${user?.role ?? "STUDENT"} · B.Tech CS`}
+                  {isAdmin
+                    ? "GLOBAL ADMIN · NexHire Platform"
+                    : isTpo
+                      ? "HEAD OF TPO · Somaiya Institutions"
+                      : isRecruiter
+                        ? "RECRUITER · Acme Technologies"
+                        : `${user?.role ?? "STUDENT"} · B.Tech CS`}
                 </p>
               </div>
             </div>
@@ -409,7 +463,7 @@ export function DashboardLayout() {
             </button>
 
             <div className="flex items-center gap-2 text-xs text-[#56627A]">
-              <span>{isTpo ? "TPO Workspace" : isRecruiter ? "Recruiter Workspace" : "Student Workspace"}</span>
+              <span>{isAdmin ? "Admin Workspace" : isTpo ? "TPO Workspace" : isRecruiter ? "Recruiter Workspace" : "Student Workspace"}</span>
               <span className="text-slate-300">/</span>
               <span className="font-semibold text-[#0B1020]">{currentSection}</span>
             </div>
@@ -422,11 +476,13 @@ export function DashboardLayout() {
               value={search}
               onChange={handleSearchChange}
               placeholder={
-                isTpo
-                  ? "Search drives, students, recruiters, approvals..."
-                  : isRecruiter
-                    ? "Search candidates, jobs, evaluations..."
-                    : "Search applications, jobs, skills..."
+                isAdmin
+                  ? "Search platform users, accounts, audit records..."
+                  : isTpo
+                    ? "Search drives, students, recruiters, approvals..."
+                    : isRecruiter
+                      ? "Search candidates, jobs, evaluations..."
+                      : "Search applications, jobs, skills..."
               }
             />
           </div>
@@ -460,13 +516,13 @@ export function DashboardLayout() {
             <div className="hidden sm:flex items-center gap-2.5">
               <div
                 className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEF0FF] text-xs font-bold text-[#5146E5]"
-                title={isTpo ? "TPO session" : isRecruiter ? "Recruiter session" : "Student profile"}
+                title={isAdmin ? "Admin session" : isTpo ? "TPO session" : isRecruiter ? "Recruiter session" : "Student profile"}
               >
-                {isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
+                {isAdmin ? "AS" : isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
               </div>
               <div className="text-left">
                 <p className="text-xs font-bold text-[#0B1020] leading-none">
-                  {isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
+                  {isAdmin ? "Aditi Sen" : isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
                 </p>
                 <button
                   onClick={logout}
