@@ -151,7 +151,7 @@ export function RecruiterOffersPage() {
       <section className="flex flex-col justify-between gap-4 border-b border-[#E4E7EF] pb-6 sm:flex-row sm:items-end">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#5146E5]">
-            Recruiter Workspace / Offers
+            Recruiter workspace
           </span>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-[#0B1020] sm:text-4xl">
             Offers

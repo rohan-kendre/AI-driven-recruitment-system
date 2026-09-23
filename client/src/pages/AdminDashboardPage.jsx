@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { FilterTabs, Toast } from "../components/ui.jsx";
 import {
   adminProfile,
   overviewMetrics,
@@ -145,19 +146,7 @@ export function AdminDashboardPage() {
   return (
     <div className="space-y-10 pb-16">
       {/* Toast Feedback */}
-      {feedbackToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-[#16886A]/20 bg-[#F0FDF4] px-4 py-3 text-xs font-semibold text-[#16886A] shadow-md animate-fade-in">
-          <span className="flex h-2 w-2 rounded-full bg-[#16886A]" />
-          <span>{feedbackToast}</span>
-          <button
-            onClick={() => setFeedbackToast(null)}
-            className="ml-2 text-[#16886A]/60 hover:text-[#16886A]"
-            aria-label="Dismiss toast"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      <Toast message={feedbackToast} onClose={() => setFeedbackToast(null)} tone="success" />
 
       {/* ============================================================== */}
       {/* 1. HEADER                                                      */}
@@ -392,22 +381,11 @@ export function AdminDashboardPage() {
           </div>
 
           {/* Role Filter Tabs */}
-          <div className="inline-flex rounded-xl border border-[#E4E7EF] bg-white p-1">
-            {["All", "Students", "Recruiters", "TPO", "Admins"].map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setUserRoleFilter(tab)}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                  userRoleFilter === tab
-                    ? "bg-[#0B1020] text-white"
-                    : "text-[#56627A] hover:text-[#0B1020]"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          <FilterTabs
+            tabs={["All", "Students", "Recruiters", "TPO", "Admins"]}
+            activeTab={userRoleFilter}
+            onChange={setUserRoleFilter}
+          />
         </div>
 
         {/* User Search & Summary */}

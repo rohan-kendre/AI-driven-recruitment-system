@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Badge, Button } from "../components/ui.jsx";
+import { Badge, Button, Toast } from "../components/ui.jsx";
 import { initialCandidates } from "../data/recruiterCandidatesData.js";
 
 const STAGES = ["All", "Applied", "Screening", "Shortlisted", "Interview", "Offer"];
@@ -131,13 +131,16 @@ export function RecruiterCandidatesPage() {
 
   return (
     <div className="space-y-10 pb-16">
+      {/* Toast Feedback */}
+      <Toast message={feedbackToast} onClose={() => setFeedbackToast(null)} tone="indigo" />
+
       {/* ============================================================== */}
       {/* 1. HEADER & PIPELINE CONTEXT                                   */}
       {/* ============================================================== */}
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-[#E4E7EF] pb-6">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#5146E5]">
-            Recruiter workspace / Candidates
+            Recruiter workspace
           </span>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-[#0B1020] sm:text-4xl">
             Candidates
@@ -157,19 +160,6 @@ export function RecruiterCandidatesPage() {
           </span>
         </div>
       </section>
-
-      {/* Temporary Feedback Notification Banner */}
-      {feedbackToast && (
-        <div className="rounded-xl border border-indigo-100 bg-[#EEF0FF] p-3.5 text-xs font-medium text-[#5146E5] flex items-center justify-between transition-all duration-200">
-          <span>{feedbackToast}</span>
-          <button
-            onClick={() => setFeedbackToast(null)}
-            className="text-[#5146E5] hover:opacity-75 font-semibold text-xs ml-4"
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* ============================================================== */}
       {/* 2. CLEAN CANDIDATE PIPELINE (SMALL & SECONDARY COUNTS)         */}

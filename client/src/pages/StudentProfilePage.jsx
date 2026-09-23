@@ -164,9 +164,6 @@ export function StudentProfilePage() {
       {/* 1. PROFILE HEADER / IDENTITY BLOCK                             */}
       {/* ============================================================== */}
       <section className="relative overflow-hidden rounded-2xl border border-[#E4E7EF] bg-white p-6 sm:p-8 shadow-subtle">
-        {/* Subtle accent border at top */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#5146E5] via-[#818CF8] to-[#16886A]" />
-
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           {/* Identity Group */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">

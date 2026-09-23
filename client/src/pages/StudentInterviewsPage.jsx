@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Badge, Button } from "../components/ui.jsx";
+import { Badge, Button, FilterTabs } from "../components/ui.jsx";
 import { initialInterviews } from "../data/interviewsData.js";
 
 export function StudentInterviewsPage() {
@@ -81,24 +81,11 @@ export function StudentInterviewsPage() {
         </div>
 
         {/* Minimal Tab Filter */}
-        <div className="flex items-center gap-1 rounded-xl border border-[#E4E7EF] bg-white p-1 shadow-2xs self-start sm:self-auto">
-          {["All", "Upcoming", "Completed"].map((tab) => {
-            const isActive = filterTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setFilterTab(tab)}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-[#5146E5] text-white font-semibold shadow-2xs"
-                    : "text-[#56627A] hover:text-[#0B1020] hover:bg-slate-50"
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
-        </div>
+        <FilterTabs
+          tabs={["All", "Upcoming", "Completed"]}
+          activeTab={filterTab}
+          onChange={setFilterTab}
+        />
       </section>
 
       {/* ============================================================== */}

@@ -53,35 +53,24 @@ export function StudentApplicationsPage() {
       {/* ============================================================== */}
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-[#E4E7EF] pb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5146E5]">
-              Placement Application Center
-            </span>
-            <span className="h-1 w-1 rounded-full bg-slate-300" />
-            <span className="text-xs text-[#56627A]">
-              Active Drive Tracking
-            </span>
-          </div>
-          <h1 className="mt-1.5 font-display text-3xl font-extrabold tracking-tight text-[#0B1020] sm:text-4xl">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#5146E5]">
+            Student workspace
+          </span>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-[#0B1020] sm:text-4xl">
             Applications
           </h1>
-          <p className="mt-1 text-sm text-[#56627A] max-w-2xl leading-relaxed">
-            Track your placement applications, current stages, interviews, and
-            next steps from one structured command center.
+          <p className="mt-1 text-sm text-[#56627A]">
+            Track your placement applications, current stages, interviews, and next steps.
           </p>
         </div>
 
-        {/* High-Level Metric Pills */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#E4E7EF] bg-white px-3 py-1.5 font-semibold text-[#0B1020] shadow-2xs">
-            <span className="h-2 w-2 rounded-full bg-[#5146E5]" />
-            {applicationsSummary.total} Active in Pipeline
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E4E7EF] bg-white px-3 py-1 text-xs font-medium text-[#0B1020]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
+            Somaiya TPO Verified
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-100 bg-[#EEF0FF] px-3 py-1.5 font-semibold text-[#5146E5]">
-            {applicationsSummary.interview} Interview Rounds
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-100 bg-[#E8F6F1] px-3 py-1.5 font-semibold text-[#16886A]">
-            {applicationsSummary.offer} Offer Received
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-[#EEF0FF] px-2.5 py-1 text-xs font-semibold text-[#5146E5]">
+            {applicationsSummary.total} Active
           </span>
         </div>
       </section>
