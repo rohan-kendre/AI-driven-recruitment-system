@@ -145,6 +145,54 @@ const recruiterNavItems = [
   },
 ];
 
+const tpoNavItems = [
+  {
+    label: "Overview",
+    to: "/tpo",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Students",
+    to: "/tpo",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Recruiters",
+    to: "/tpo",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Drives",
+    to: "/tpo",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
+      </svg>
+    ),
+  },
+  {
+    label: "Reports",
+    to: "/tpo",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+      </svg>
+    ),
+  },
+];
+
 export function DashboardLayout() {
   // useState: controls the responsive sidebar drawer.
   const [open, setOpen] = useState(false);
@@ -160,36 +208,39 @@ export function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const isRecruiter = location.pathname.startsWith("/recruiter");
-  const currentNavItems = isRecruiter ? recruiterNavItems : navItems;
+  const isTpo = location.pathname.startsWith("/tpo");
+  const isRecruiter = !isTpo && location.pathname.startsWith("/recruiter");
+  const currentNavItems = isTpo ? tpoNavItems : isRecruiter ? recruiterNavItems : navItems;
 
-  const currentSection = isRecruiter
-    ? location.pathname === "/recruiter/company"
-      ? "Company"
-      : location.pathname === "/recruiter/jobs"
-        ? "Jobs"
-        : location.pathname === "/recruiter/candidates"
-          ? "Candidates"
-          : location.pathname === "/recruiter/applications"
-            ? "Applications"
-            : location.pathname === "/recruiter/interviews"
-              ? "Interviews"
-              : location.pathname === "/recruiter/offers"
-                ? "Offers"
-                : "Overview"
-    : location.pathname === "/student/profile"
-      ? "My Profile"
-      : location.pathname === "/student/resume"
-        ? "Resume & ATS"
-        : location.pathname === "/student/jobs"
-          ? "Jobs & Opportunities"
-          : location.pathname === "/student/applications"
-            ? "Applications"
-            : location.pathname === "/student/interviews"
-              ? "Interviews"
-              : location.pathname === "/student/offers"
-                ? "Offers"
-                : "Overview";
+  const currentSection = isTpo
+    ? "Overview"
+    : isRecruiter
+      ? location.pathname === "/recruiter/company"
+        ? "Company"
+        : location.pathname === "/recruiter/jobs"
+          ? "Jobs"
+          : location.pathname === "/recruiter/candidates"
+            ? "Candidates"
+            : location.pathname === "/recruiter/applications"
+              ? "Applications"
+              : location.pathname === "/recruiter/interviews"
+                ? "Interviews"
+                : location.pathname === "/recruiter/offers"
+                  ? "Offers"
+                  : "Overview"
+      : location.pathname === "/student/profile"
+        ? "My Profile"
+        : location.pathname === "/student/resume"
+          ? "Resume & ATS"
+          : location.pathname === "/student/jobs"
+            ? "Jobs & Opportunities"
+            : location.pathname === "/student/applications"
+              ? "Applications"
+              : location.pathname === "/student/interviews"
+                ? "Interviews"
+                : location.pathname === "/student/offers"
+                  ? "Offers"
+                  : "Overview";
 
   return (
     <div className="min-h-screen bg-[#F7F8FC] font-sans text-[#0B1020]">
@@ -204,7 +255,7 @@ export function DashboardLayout() {
         {/* Brand Area */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-white/10">
           <NavLink
-            to={isRecruiter ? "/recruiter" : "/student"}
+            to={isTpo ? "/tpo" : isRecruiter ? "/recruiter" : "/student"}
             className="flex items-center gap-2.5"
             onClick={() => setOpen(false)}
           >
@@ -216,7 +267,7 @@ export function DashboardLayout() {
                 NexHire
               </span>
               <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-indigo-300">
-                {isRecruiter ? "Recruiter" : "Student"}
+                {isTpo ? "Placement Office" : isRecruiter ? "Recruiter" : "Student"}
               </span>
             </div>
           </NavLink>
@@ -233,29 +284,35 @@ export function DashboardLayout() {
         {/* Main Navigation Links */}
         <div className="px-3 py-4">
           <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            {isRecruiter ? "Recruitment Navigation" : "Placement Navigation"}
+            {isTpo
+              ? "Institutional Navigation"
+              : isRecruiter
+                ? "Recruitment Navigation"
+                : "Placement Navigation"}
           </p>
           <nav className="space-y-1">
             {currentNavItems.map((item) => {
-              const isActive = isRecruiter
-                ? item.label === "Overview"
-                  ? location.pathname === "/recruiter"
-                  : item.to !== "/recruiter" && location.pathname === item.to
-                : item.to === "/student/profile"
-                  ? location.pathname === "/student/profile"
-                  : item.to === "/student/resume"
-                    ? location.pathname === "/student/resume"
-                    : item.to === "/student/jobs"
-                      ? location.pathname === "/student/jobs"
-                      : item.to === "/student/applications"
-                        ? location.pathname === "/student/applications"
-                        : item.to === "/student/interviews"
-                          ? location.pathname === "/student/interviews"
-                          : item.to === "/student/offers"
-                            ? location.pathname === "/student/offers"
-                            : item.label === "Overview"
-                              ? location.pathname === "/student"
-                              : false;
+              const isActive = isTpo
+                ? item.label === "Overview" && location.pathname === "/tpo"
+                : isRecruiter
+                  ? item.label === "Overview"
+                    ? location.pathname === "/recruiter"
+                    : item.to !== "/recruiter" && location.pathname === item.to
+                  : item.to === "/student/profile"
+                    ? location.pathname === "/student/profile"
+                    : item.to === "/student/resume"
+                      ? location.pathname === "/student/resume"
+                      : item.to === "/student/jobs"
+                        ? location.pathname === "/student/jobs"
+                        : item.to === "/student/applications"
+                          ? location.pathname === "/student/applications"
+                          : item.to === "/student/interviews"
+                            ? location.pathname === "/student/interviews"
+                            : item.to === "/student/offers"
+                              ? location.pathname === "/student/offers"
+                              : item.label === "Overview"
+                                ? location.pathname === "/student"
+                                : false;
 
               return (
                 <Link
@@ -295,16 +352,18 @@ export function DashboardLayout() {
           <div className="flex items-center justify-between rounded-xl p-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#5146E5] text-xs font-bold text-white shadow-subtle">
-                {isRecruiter ? "VM" : (user?.initials ?? "AK")}
+                {isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
               </span>
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold text-white">
-                  {isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
+                  {isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
                 </p>
                 <p className="truncate text-[10px] text-slate-400">
-                  {isRecruiter
-                    ? "RECRUITER · Acme Technologies"
-                    : `${user?.role ?? "STUDENT"} · B.Tech CS`}
+                  {isTpo
+                    ? "HEAD OF TPO · Somaiya Institutions"
+                    : isRecruiter
+                      ? "RECRUITER · Acme Technologies"
+                      : `${user?.role ?? "STUDENT"} · B.Tech CS`}
                 </p>
               </div>
             </div>
@@ -350,7 +409,7 @@ export function DashboardLayout() {
             </button>
 
             <div className="flex items-center gap-2 text-xs text-[#56627A]">
-              <span>{isRecruiter ? "Recruiter Workspace" : "Student Workspace"}</span>
+              <span>{isTpo ? "TPO Workspace" : isRecruiter ? "Recruiter Workspace" : "Student Workspace"}</span>
               <span className="text-slate-300">/</span>
               <span className="font-semibold text-[#0B1020]">{currentSection}</span>
             </div>
@@ -362,7 +421,13 @@ export function DashboardLayout() {
               inputRef={searchRef}
               value={search}
               onChange={handleSearchChange}
-              placeholder={isRecruiter ? "Search candidates, jobs, evaluations..." : "Search applications, jobs, skills..."}
+              placeholder={
+                isTpo
+                  ? "Search drives, students, recruiters, approvals..."
+                  : isRecruiter
+                    ? "Search candidates, jobs, evaluations..."
+                    : "Search applications, jobs, skills..."
+              }
             />
           </div>
 
@@ -395,13 +460,13 @@ export function DashboardLayout() {
             <div className="hidden sm:flex items-center gap-2.5">
               <div
                 className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEF0FF] text-xs font-bold text-[#5146E5]"
-                title={isRecruiter ? "Recruiter session" : "Student profile"}
+                title={isTpo ? "TPO session" : isRecruiter ? "Recruiter session" : "Student profile"}
               >
-                {isRecruiter ? "VM" : (user?.initials ?? "AK")}
+                {isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
               </div>
               <div className="text-left">
                 <p className="text-xs font-bold text-[#0B1020] leading-none">
-                  {isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
+                  {isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
                 </p>
                 <button
                   onClick={logout}
