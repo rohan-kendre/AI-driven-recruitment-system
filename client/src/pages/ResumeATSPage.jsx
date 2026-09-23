@@ -52,21 +52,14 @@ export function ResumeATSPage() {
       {/* ============================================================== */}
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end border-b border-[#E4E7EF] pb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5146E5]">
-              Resume & ATS
-            </span>
-            <span className="h-1 w-1 rounded-full bg-slate-300" />
-            <span className="text-xs text-[#56627A]">
-              Placement Application Center
-            </span>
-          </div>
-          <h1 className="mt-1.5 font-display text-3xl font-extrabold tracking-tight text-[#0B1020] sm:text-4xl">
-            Make your resume application-ready.
+          <span className="text-xs font-bold uppercase tracking-wider text-[#5146E5]">
+            Student workspace
+          </span>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-[#0B1020] sm:text-4xl">
+            Resume & ATS
           </h1>
           <p className="mt-1 text-sm text-[#56627A] max-w-2xl leading-relaxed">
-            Review your active resume, understand its ATS readiness, and focus on
-            the improvements that matter most for campus placements.
+            Review your active resume, evaluate ATS readiness, and target campus placement requirements.
           </p>
         </div>
 
