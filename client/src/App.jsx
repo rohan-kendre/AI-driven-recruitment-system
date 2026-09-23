@@ -10,6 +10,7 @@ import { ResumeATSPage } from "./pages/ResumeATSPage.jsx";
 import { StudentJobsPage } from "./pages/StudentJobsPage.jsx";
 import { StudentApplicationsPage } from "./pages/StudentApplicationsPage.jsx";
 import { StudentInterviewsPage } from "./pages/StudentInterviewsPage.jsx";
+import { StudentOffersPage } from "./pages/StudentOffersPage.jsx";
 
 const titles = {
   "/": "NexHire | Campus recruitment, made clearer",
@@ -21,6 +22,7 @@ const titles = {
   "/student/jobs": "Jobs & Opportunities | NexHire",
   "/student/applications": "Applications | NexHire",
   "/student/interviews": "Interviews | NexHire",
+  "/student/offers": "Offers | NexHire",
   "/recruiter": "Recruiter workspace | NexHire",
 };
 
@@ -50,6 +52,7 @@ export default function App() {
           <Route path="/student/jobs" element={<StudentJobsPage />} />
           <Route path="/student/applications" element={<StudentApplicationsPage />} />
           <Route path="/student/interviews" element={<StudentInterviewsPage />} />
+          <Route path="/student/offers" element={<StudentOffersPage />} />
           <Route path="/recruiter" element={<RecruiterPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
