@@ -9,6 +9,7 @@ import { RecruiterJobsPage } from "./pages/RecruiterJobsPage.jsx";
 import { RecruiterCandidatesPage } from "./pages/RecruiterCandidatesPage.jsx";
 import { RecruiterInterviewsPage } from "./pages/RecruiterInterviewsPage.jsx";
 import { RecruiterOffersPage } from "./pages/RecruiterOffersPage.jsx";
+import { TpoDashboardPage } from "./pages/TpoDashboardPage.jsx";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage.jsx";
 import { StudentProfilePage } from "./pages/StudentProfilePage.jsx";
 import { ResumeATSPage } from "./pages/ResumeATSPage.jsx";
@@ -35,6 +36,7 @@ const titles = {
   "/recruiter/applications": "Candidates & Applications | NexHire",
   "/recruiter/interviews": "Interviews | NexHire",
   "/recruiter/offers": "Offers | NexHire",
+  "/tpo": "Placement Workspace | NexHire",
 };
 
 function PageTitle() {
@@ -71,6 +73,7 @@ export default function App() {
           <Route path="/recruiter/applications" element={<RecruiterCandidatesPage />} />
           <Route path="/recruiter/interviews" element={<RecruiterInterviewsPage />} />
           <Route path="/recruiter/offers" element={<RecruiterOffersPage />} />
+          <Route path="/tpo" element={<TpoDashboardPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
