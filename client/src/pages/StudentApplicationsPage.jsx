@@ -501,9 +501,17 @@ export function StudentApplicationsPage() {
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-[#56627A] border-t border-[#E4E7EF] pt-2">
-                    {selectedApp.offer.note}
-                  </p>
+                  <div className="flex items-center justify-between border-t border-[#E4E7EF] pt-2">
+                    <p className="text-[11px] text-[#56627A]">
+                      {selectedApp.offer.note}
+                    </p>
+                    <Link
+                      to="/student/offers"
+                      className="text-xs font-semibold text-[#5146E5] hover:underline shrink-0 ml-3"
+                    >
+                      Review offer →
+                    </Link>
+                  </div>
                 </div>
               )}
 
