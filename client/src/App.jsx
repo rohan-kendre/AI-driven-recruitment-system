@@ -3,7 +3,12 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import { DashboardLayout } from "./layouts/DashboardLayout.jsx";
 import { PublicLayout } from "./layouts/PublicLayout.jsx";
 import { LandingPage, LoginPage, RegisterPage, NotFoundPage } from "./pages/PublicPages.jsx";
-import { RecruiterPage } from "./pages/RecruiterPage.jsx";
+import { RecruiterDashboardPage } from "./pages/RecruiterDashboardPage.jsx";
+import { RecruiterCompanyPage } from "./pages/RecruiterCompanyPage.jsx";
+import { RecruiterJobsPage } from "./pages/RecruiterJobsPage.jsx";
+import { RecruiterCandidatesPage } from "./pages/RecruiterCandidatesPage.jsx";
+import { RecruiterInterviewsPage } from "./pages/RecruiterInterviewsPage.jsx";
+import { RecruiterOffersPage } from "./pages/RecruiterOffersPage.jsx";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage.jsx";
 import { StudentProfilePage } from "./pages/StudentProfilePage.jsx";
 import { ResumeATSPage } from "./pages/ResumeATSPage.jsx";
@@ -24,6 +29,12 @@ const titles = {
   "/student/interviews": "Interviews | NexHire",
   "/student/offers": "Offers | NexHire",
   "/recruiter": "Recruiter workspace | NexHire",
+  "/recruiter/company": "Company Profile | NexHire",
+  "/recruiter/jobs": "Jobs & Drives | NexHire",
+  "/recruiter/candidates": "Candidates | NexHire",
+  "/recruiter/applications": "Candidates & Applications | NexHire",
+  "/recruiter/interviews": "Interviews | NexHire",
+  "/recruiter/offers": "Offers | NexHire",
 };
 
 function PageTitle() {
@@ -53,7 +64,13 @@ export default function App() {
           <Route path="/student/applications" element={<StudentApplicationsPage />} />
           <Route path="/student/interviews" element={<StudentInterviewsPage />} />
           <Route path="/student/offers" element={<StudentOffersPage />} />
-          <Route path="/recruiter" element={<RecruiterPage />} />
+          <Route path="/recruiter" element={<RecruiterDashboardPage />} />
+          <Route path="/recruiter/company" element={<RecruiterCompanyPage />} />
+          <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
+          <Route path="/recruiter/candidates" element={<RecruiterCandidatesPage />} />
+          <Route path="/recruiter/applications" element={<RecruiterCandidatesPage />} />
+          <Route path="/recruiter/interviews" element={<RecruiterInterviewsPage />} />
+          <Route path="/recruiter/offers" element={<RecruiterOffersPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
