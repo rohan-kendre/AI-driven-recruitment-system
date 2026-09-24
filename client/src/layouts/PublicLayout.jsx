@@ -30,6 +30,41 @@ export function PublicLayout() {
               </div>
             </Link>
 
+            {!isAuth && (
+              <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+                <Link
+                  to="/student"
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#56627A] hover:text-[#0B1020] hover:bg-[#EEF0FF] transition-all"
+                >
+                  Student
+                </Link>
+                <Link
+                  to="/recruiter"
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#56627A] hover:text-[#0B1020] hover:bg-[#EEF0FF] transition-all"
+                >
+                  Recruiter
+                </Link>
+                <Link
+                  to="/student/resume"
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#56627A] hover:text-[#0B1020] hover:bg-[#EEF0FF] transition-all"
+                >
+                  Resume & ATS
+                </Link>
+                <Link
+                  to="/student/applications"
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#56627A] hover:text-[#0B1020] hover:bg-[#EEF0FF] transition-all"
+                >
+                  Applications
+                </Link>
+                <Link
+                  to="/student/interviews"
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-[#56627A] hover:text-[#0B1020] hover:bg-[#EEF0FF] transition-all"
+                >
+                  Interviews
+                </Link>
+              </nav>
+            )}
+
             {isAuth ? (
               <div className="flex items-center gap-3">
                 <Link
