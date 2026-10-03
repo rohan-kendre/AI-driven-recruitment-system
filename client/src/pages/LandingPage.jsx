@@ -1,34 +1,8 @@
-import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Button } from "../components/ui.jsx";
 import heroArchitecture from "../assets/hero-architecture.jpg";
 
 export function LandingPage() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  // Close floating menu on click outside or Escape key
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    }
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [menuOpen]);
-
   return (
     <div className="min-h-screen bg-[#F7F8FC] text-[#0B1020]">
       {/* ============================================================== */}
@@ -49,112 +23,67 @@ export function LandingPage() {
           </div>
 
           {/* Top: Floating Translucent Navigation Bar */}
-          <div className="relative z-30 mx-auto w-full max-w-4xl">
-            <nav className="flex h-14 items-center justify-between rounded-full border border-white/20 bg-[#0B1020]/50 px-4 sm:px-6 shadow-floating backdrop-blur-md transition-all">
+          <div className="relative z-30 mx-auto w-full max-w-5xl lg:max-w-6xl">
+            <nav className="flex h-14 items-center justify-between rounded-full border border-white/20 bg-[#0B1020]/60 px-3.5 sm:px-6 shadow-floating backdrop-blur-md transition-all gap-3 sm:gap-4">
               {/* Brand */}
               <Link
                 to="/"
-                className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
+                className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0"
               >
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#5146E5] text-xs font-bold text-white shadow-subtle">
                   N
                 </span>
-                <span className="font-display text-base font-bold tracking-tight text-white">
+                <span className="font-display text-base font-bold tracking-tight text-white hidden xs:inline-block">
                   NexHire
                 </span>
               </Link>
 
-              {/* Menu Trigger */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((prev) => !prev)}
-                  aria-expanded={menuOpen}
-                  aria-label="Toggle navigation menu"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-all cursor-pointer"
+              {/* Navigation Options Directly on Navigation Bar */}
+              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 overflow-x-auto no-scrollbar py-1">
+                <Link
+                  to="/student"
+                  className="rounded-full px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#6257F5]" />
-                  <span>Menu</span>
-                  <svg
-                    className={`h-3 w-3 text-white/80 transition-transform duration-200 ${
-                      menuOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2.5"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-
-                {/* Compact Floating Dark Menu Panel */}
-                {menuOpen && (
-                  <div
-                    ref={menuRef}
-                    className="absolute top-12 left-1/2 -translate-x-1/2 z-50 w-64 rounded-2xl border border-white/15 bg-[#0B1020]/95 p-3 shadow-floating backdrop-blur-2xl animate-fadeIn space-y-1 text-xs"
-                  >
-                    <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Placement Navigation
-                    </p>
-                    <Link
-                      to="/student"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between rounded-xl px-3 py-2 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
-                    >
-                      <span>Student Workspace</span>
-                      <span className="text-slate-400">→</span>
-                    </Link>
-                    <Link
-                      to="/recruiter"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center justify-between rounded-xl px-3 py-2 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
-                    >
-                      <span>Recruiter Workspace</span>
-                      <span className="text-slate-400">→</span>
-                    </Link>
-                    <div className="border-t border-white/10 my-1 pt-1">
-                      <Link
-                        to="/student/resume"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center justify-between rounded-xl px-3 py-2 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        <span>Resume & ATS Engine</span>
-                        <span className="text-slate-400">→</span>
-                      </Link>
-                      <Link
-                        to="/student/applications"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center justify-between rounded-xl px-3 py-2 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        <span>Applications Center</span>
-                        <span className="text-slate-400">→</span>
-                      </Link>
-                      <Link
-                        to="/student/interviews"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center justify-between rounded-xl px-3 py-2 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        <span>Interviews Calendar</span>
-                        <span className="text-slate-400">→</span>
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                  Student
+                </Link>
+                <Link
+                  to="/recruiter"
+                  className="rounded-full px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
+                >
+                  Recruiter
+                </Link>
+                <Link
+                  to="/student/resume"
+                  className="rounded-full px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
+                >
+                  Resume & ATS
+                </Link>
+                <Link
+                  to="/student/applications"
+                  className="rounded-full px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
+                >
+                  Applications
+                </Link>
+                <Link
+                  to="/student/interviews"
+                  className="rounded-full px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
+                >
+                  Interviews
+                </Link>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 <Link
                   to="/login"
-                  className="text-xs sm:text-sm font-semibold text-white/80 hover:text-white px-2.5 py-1.5 transition-colors"
+                  className="text-xs sm:text-sm font-semibold text-white/80 hover:text-white px-2 sm:px-2.5 py-1.5 transition-colors whitespace-nowrap"
                 >
                   Sign in
                 </Link>
                 <Link to="/register">
                   <Button
                     variant="primary"
-                    className="rounded-full px-4 py-1.5 sm:py-2 text-xs sm:text-sm shadow-subtle"
+                    className="rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm shadow-subtle whitespace-nowrap"
                   >
                     Get started
                   </Button>
