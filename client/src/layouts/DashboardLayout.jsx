@@ -165,6 +165,15 @@ const tpoNavItems = [
     ),
   },
   {
+    label: "Placement Analytics",
+    to: "/tpo/placement-analytics",
+    icon: (
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+      </svg>
+    ),
+  },
+  {
     label: "Recruiters",
     to: "/tpo",
     icon: (
@@ -261,7 +270,9 @@ export function DashboardLayout() {
   const currentSection = isAdmin
     ? "Overview"
     : isTpo
-      ? "Overview"
+      ? location.pathname === "/tpo/placement-analytics"
+        ? "Placement Analytics"
+        : "Overview"
       : isRecruiter
         ? location.pathname === "/recruiter/company"
           ? "Company"
@@ -342,10 +353,12 @@ export function DashboardLayout() {
           </p>
           <nav className="space-y-1">
             {currentNavItems.map((item) => {
-              const isActive = isAdmin
-                ? item.label === "Overview" && location.pathname === "/admin"
-                : isTpo
-                  ? item.label === "Overview" && location.pathname === "/tpo"
+                const isActive = isAdmin
+                  ? item.label === "Overview" && location.pathname === "/admin"
+                  : isTpo
+                    ? item.to === "/tpo/placement-analytics"
+                      ? location.pathname === "/tpo/placement-analytics"
+                      : item.label === "Overview" && location.pathname === "/tpo"
                   : isRecruiter
                     ? item.label === "Overview"
                       ? location.pathname === "/recruiter"
@@ -376,22 +389,22 @@ export function DashboardLayout() {
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }
                   }}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-medium transition-all ${
+                  className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[#5146E5] focus-visible:ring-offset-1 focus-visible:ring-offset-[#0B1020] ${
                     isActive
-                      ? "bg-[#5146E5]/20 text-white font-semibold border-l-2 border-[#5146E5]"
-                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                      ? "bg-[#5146E5]/10 text-white font-semibold border border-[#5146E5]/20"
+                      : "text-slate-400 font-medium hover:bg-white/5 hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <span
-                    className={`transition-colors ${
-                      isActive ? "text-[#6257F5]" : "text-slate-400 group-hover:text-white"
+                    className={`flex shrink-0 items-center justify-center transition-colors duration-150 ${
+                      isActive ? "text-[#818CF8]" : "text-slate-400 group-hover:text-slate-300"
                     }`}
                   >
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
                   {isActive && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#5146E5]" />
+                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#818CF8]" />
                   )}
                 </Link>
               );
