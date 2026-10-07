@@ -1,12 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { initialRecruiterInterviews } from "../data/recruiterInterviewsData.js";
+import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
 
 const STATUS_FILTERS = ["All", "Upcoming", "Completed"];
 const MODE_FILTERS = ["All Modes", "Virtual", "On campus"];
 
 export function RecruiterInterviewsPage() {
-  const [interviews, setInterviews] = useState(initialRecruiterInterviews);
+  const [interviews, setInterviews] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("Upcoming");
   const [selectedMode, setSelectedMode] = useState("All Modes");
   const [selectedInterview, setSelectedInterview] = useState(null);
@@ -17,6 +20,22 @@ export function RecruiterInterviewsPage() {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 5000);
   };
+
+  const loadInterviews = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      setInterviews(await interviewsOffersApi.getRecruiterInterviews());
+    } catch (error) {
+      setLoadError(error.message || "Unable to load interviews. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadInterviews);
+  }, [loadInterviews]);
 
   // Filtered interviews list
   const filteredInterviews = useMemo(() => {
@@ -37,73 +56,37 @@ export function RecruiterInterviewsPage() {
     };
   }, [interviews]);
 
-  // Mark interview complete (local state update)
-  const handleMarkComplete = (interviewId) => {
-    setInterviews((prev) =>
-      prev.map((i) => {
-        if (i.id === interviewId) {
-          return {
-            ...i,
-            status: "Completed",
-            timeline: [
-              ...i.timeline,
-              { stage: "Interview", date: "Today", note: "Marked complete by recruiter panel." },
-            ],
-          };
-        }
-        return i;
-      }),
-    );
-
-    if (selectedInterview && selectedInterview.id === interviewId) {
-      setSelectedInterview((prev) => ({
-        ...prev,
-        status: "Completed",
-        timeline: [
-          ...prev.timeline,
-          { stage: "Interview", date: "Today", note: "Marked complete by recruiter panel." },
-        ],
-      }));
+  const handleMarkComplete = async (interviewId) => {
+    setIsSaving(true);
+    try {
+      await interviewsOffersApi.completeInterview(interviewId);
+      setSelectedInterview(null);
+      await loadInterviews();
+      showToast("Interview marked as completed.");
+    } catch (error) {
+      showToast(error.message || "Unable to complete the interview. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    showToast("Interview marked as completed. Candidate record updated.");
   };
 
-  // Handle reschedule submit (frontend only)
-  const handleRescheduleSubmit = (e) => {
+  const handleRescheduleSubmit = async (e) => {
     e.preventDefault();
     if (!rescheduleModal) return;
 
-    const { interviewId, date, time } = rescheduleModal;
-    setInterviews((prev) =>
-      prev.map((i) => {
-        if (i.id === interviewId) {
-          const parts = date.split(" ");
-          return {
-            ...i,
-            date,
-            day: parts[0] || i.day,
-            month: (parts[1] || i.month).toUpperCase(),
-            time,
-          };
-        }
-        return i;
-      }),
-    );
-
-    if (selectedInterview && selectedInterview.id === interviewId) {
-      const parts = date.split(" ");
-      setSelectedInterview((prev) => ({
-        ...prev,
-        date,
-        day: parts[0] || prev.day,
-        month: (parts[1] || prev.month).toUpperCase(),
-        time,
-      }));
+    const { interviewId, date, time, location, workMode } = rescheduleModal;
+    setIsSaving(true);
+    try {
+      await interviewsOffersApi.rescheduleInterview(interviewId, { date, time, location, workMode });
+      setRescheduleModal(null);
+      setSelectedInterview(null);
+      await loadInterviews();
+      showToast(`Interview rescheduled to ${date} at ${time}.`);
+    } catch (error) {
+      showToast(error.message || "Unable to reschedule the interview. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    setRescheduleModal(null);
-    showToast(`Interview rescheduled to ${date} at ${time}.`);
   };
 
   // Close drawer on Escape
@@ -235,7 +218,15 @@ export function RecruiterInterviewsPage() {
           <span className="hidden sm:inline text-[#8F9CAE]">Click any round to view panel details</span>
         </div>
 
-        {filteredInterviews.length === 0 ? (
+        {isLoading ? (
+          <div className="py-16 text-center text-sm text-[#56627A]">Loading interviews…</div>
+        ) : loadError ? (
+          <div className="py-16 text-center">
+            <p className="text-sm font-semibold text-[#0B1020]">Could not load interviews</p>
+            <p className="mt-1 text-xs text-[#56627A]">{loadError}</p>
+            <button onClick={loadInterviews} className="mt-4 text-xs font-semibold text-[#5146E5] hover:underline">Retry</button>
+          </div>
+        ) : filteredInterviews.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-sm font-semibold text-[#0B1020]">No interviews found</p>
             <p className="mt-1 text-xs text-[#56627A]">
@@ -478,12 +469,15 @@ export function RecruiterInterviewsPage() {
                   <>
                     <button
                       type="button"
+                      disabled={isSaving}
                       onClick={() =>
                         setRescheduleModal({
                           interviewId: selectedInterview.id,
                           candidateName: selectedInterview.candidateName,
                           date: selectedInterview.date,
                           time: selectedInterview.time,
+                          location: selectedInterview.locationDetails,
+                          workMode: selectedInterview.mode,
                         })
                       }
                       className="rounded-xl border border-[#E4E7EF] bg-white px-3.5 py-2 text-xs font-semibold text-[#0B1020] hover:bg-[#F7F8FC] transition-colors"
@@ -492,6 +486,7 @@ export function RecruiterInterviewsPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={isSaving}
                       onClick={() => handleMarkComplete(selectedInterview.id)}
                       className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors shadow-subtle"
                     >
@@ -528,7 +523,7 @@ export function RecruiterInterviewsPage() {
                 {rescheduleModal.candidateName}
               </h3>
               <p className="mt-1 text-xs text-[#56627A]">
-                Update evaluation session timing. Changes are updated locally.
+                Update evaluation session timing. Changes are saved to MockAPI.
               </p>
             </div>
 
@@ -565,6 +560,34 @@ export function RecruiterInterviewsPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-[#0B1020] mb-1">
+                  Location or meeting link
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={rescheduleModal.location || ""}
+                  onChange={(e) => setRescheduleModal((prev) => ({ ...prev, location: e.target.value }))}
+                  className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#0B1020] mb-1">
+                  Mode
+                </label>
+                <select
+                  value={rescheduleModal.workMode || "Virtual"}
+                  onChange={(e) => setRescheduleModal((prev) => ({ ...prev, workMode: e.target.value }))}
+                  className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
+                >
+                  <option value="Virtual">Virtual</option>
+                  <option value="On campus">On campus</option>
+                  <option value="Hybrid">Hybrid</option>
+                </select>
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
@@ -575,9 +598,10 @@ export function RecruiterInterviewsPage() {
                 </button>
                 <button
                   type="submit"
+                  disabled={isSaving}
                   className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors"
                 >
-                  Save schedule
+                  {isSaving ? "Saving…" : "Save schedule"}
                 </button>
               </div>
             </form>

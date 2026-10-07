@@ -1,9 +1,13 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { initialInterviews } from "../data/interviewsData.js";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
 
 export function StudentInterviewsPage() {
-  const [interviews] = useState(initialInterviews);
+  const { user } = useContext(AuthContext);
+  const [interviews, setInterviews] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [filterTab, setFilterTab] = useState("Upcoming");
   const [selectedInterview, setSelectedInterview] = useState(null);
 
@@ -12,6 +16,22 @@ export function StudentInterviewsPage() {
     "prep-role": true,
     "prep-projects": false,
   });
+
+  const loadInterviews = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      setInterviews(await interviewsOffersApi.getStudentInterviews(user));
+    } catch (error) {
+      setLoadError(error.message || "Unable to load interviews. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadInterviews);
+  }, [loadInterviews]);
 
   const togglePrep = useCallback((key) => {
     setCheckedPrep((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -106,7 +126,15 @@ export function StudentInterviewsPage() {
       <div className="grid lg:grid-cols-[1fr_320px] gap-12 items-start mt-12">
         {/* 3. INTERVIEWS LIST */}
         <section>
-          {displayedInterviews.length === 0 ? (
+          {isLoading ? (
+            <div className="py-20 text-center text-sm text-[#56627A]">Loading interviews…</div>
+          ) : loadError ? (
+            <div className="py-20 text-center">
+              <p className="text-sm font-bold text-[#0B1020]">Could not load interviews</p>
+              <p className="mt-2 text-xs text-[#56627A]">{loadError}</p>
+              <button onClick={loadInterviews} className="mt-4 text-xs font-bold text-[#5146E5] underline underline-offset-4">Retry</button>
+            </div>
+          ) : displayedInterviews.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-sm font-bold text-[#0B1020]">No {filterTab.toLowerCase()} interviews</p>
             </div>

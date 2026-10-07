@@ -1,9 +1,12 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { initialRecruiterJobs } from "../data/recruiterJobsData.js";
+import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
 
 export function RecruiterJobsPage() {
-  const [jobs, setJobs] = useState(initialRecruiterJobs);
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [modalMode, setModalMode] = useState(null); // 'create' | 'edit' | null
   const [editingJob, setEditingJob] = useState(null);
@@ -28,6 +31,22 @@ export function RecruiterJobsPage() {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 5000);
   };
+
+  const loadJobs = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      setJobs(await jobsApplicationsApi.getRecruiterJobs());
+    } catch (error) {
+      setLoadError(error.message || "Unable to load recruitment drives. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadJobs);
+  }, [loadJobs]);
 
   const openCreateModal = () => {
     setEditingJob(null);
@@ -56,7 +75,7 @@ export function RecruiterJobsPage() {
       workMode: job.workMode,
       stipend: job.stipend,
       ctc: job.ctc,
-      deadline: job.deadline,
+      deadline: job.deadlineValue ? job.deadlineValue.slice(0, 10) : job.deadline,
       requiredSkills: Array.isArray(job.requiredSkills)
         ? job.requiredSkills.join(", ")
         : job.requiredSkills,
@@ -69,81 +88,25 @@ export function RecruiterJobsPage() {
     setModalMode("edit");
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const skillsArray = formData.requiredSkills
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const roundsArray = formData.selectionRounds
-      .split(",")
-      .map((r) => r.trim())
-      .filter(Boolean);
-
-    if (modalMode === "create") {
-      const newJob = {
-        id: `JOB-${Date.now().toString().slice(-4)}`,
-        company: "Acme Technologies",
-        role: formData.role,
-        domain: formData.domain,
-        location: formData.location,
-        workMode: formData.workMode,
-        stipend: formData.stipend,
-        ctc: formData.ctc,
-        deadline: formData.deadline,
-        requiredSkills: skillsArray,
-        eligibility: formData.eligibility,
-        selectionRounds: roundsArray,
-        status: formData.status,
-        applicantsCount: 0,
-        shortlistedCount: 0,
-        interviewsCount: 0,
-        offersCount: 0,
-        description: `Campus recruitment intake for ${formData.role} within ${formData.domain}.`,
-      };
-      setJobs((prev) => [newJob, ...prev]);
-      showToast(`Position created: "${newJob.role}". Campus drive is now open.`);
-    } else if (modalMode === "edit" && editingJob) {
-      setJobs((prev) =>
-        prev.map((j) =>
-          j.id === editingJob.id
-            ? {
-                ...j,
-                role: formData.role,
-                domain: formData.domain,
-                location: formData.location,
-                workMode: formData.workMode,
-                stipend: formData.stipend,
-                ctc: formData.ctc,
-                deadline: formData.deadline,
-                requiredSkills: skillsArray,
-                eligibility: formData.eligibility,
-                selectionRounds: roundsArray,
-                status: formData.status,
-              }
-            : j,
-        ),
-      );
-      if (selectedJob && selectedJob.id === editingJob.id) {
-        setSelectedJob((prev) => ({
-          ...prev,
-          role: formData.role,
-          domain: formData.domain,
-          location: formData.location,
-          workMode: formData.workMode,
-          stipend: formData.stipend,
-          ctc: formData.ctc,
-          deadline: formData.deadline,
-          requiredSkills: skillsArray,
-          eligibility: formData.eligibility,
-          selectionRounds: roundsArray,
-          status: formData.status,
-        }));
+    setIsSaving(true);
+    try {
+      if (modalMode === "create") {
+        await jobsApplicationsApi.createRecruiterJob(formData);
+        showToast(`Position created: "${formData.role}". Campus drive is now open.`);
+      } else if (modalMode === "edit" && editingJob) {
+        await jobsApplicationsApi.updateRecruiterJob(editingJob, formData);
+        showToast(`Position updated: "${formData.role}".`);
       }
-      showToast(`Position updated: "${formData.role}".`);
+      setModalMode(null);
+      setSelectedJob(null);
+      await loadJobs();
+    } catch (error) {
+      showToast(error.message || "Unable to save this position. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    setModalMode(null);
   };
 
   // Close modals/drawers on Escape
@@ -266,6 +229,17 @@ export function RecruiterJobsPage() {
           </span>
         </div>
 
+        {isLoading ? (
+          <div className="py-12 text-center text-sm text-[#56627A]">Loading recruitment drives…</div>
+        ) : loadError ? (
+          <div className="py-12 text-center">
+            <p className="text-sm font-bold text-[#0B1020]">Could not load recruitment drives</p>
+            <p className="mt-2 text-xs text-[#56627A]">{loadError}</p>
+            <button onClick={loadJobs} className="mt-4 text-xs font-bold text-[#5146E5] underline underline-offset-4">Retry</button>
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="py-12 text-center text-sm text-[#56627A]">No recruitment drives have been created yet.</div>
+        ) : (
         <div className="divide-y divide-[#E4E7EF]">
           {jobs.map((job) => (
             <div
@@ -347,6 +321,7 @@ export function RecruiterJobsPage() {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* ============================================================== */}
@@ -764,9 +739,10 @@ export function RecruiterJobsPage() {
               <Button
                 variant="primary"
                 type="submit"
+                disabled={isSaving}
                 className="text-xs py-2 px-4"
               >
-                {modalMode === "create" ? "Create Job" : "Update Job"}
+                {isSaving ? "Saving…" : modalMode === "create" ? "Create Job" : "Update Job"}
               </Button>
             </div>
           </form>

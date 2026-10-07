@@ -9,6 +9,8 @@ import {
   recruiterSummary,
   upcomingInterviews,
 } from "../data/recruiterData.js";
+import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
 
 export function RecruiterDashboardPage() {
   const [selectedStage, setSelectedStage] = useState("All");
@@ -20,11 +22,12 @@ export function RecruiterDashboardPage() {
   // Form states for quick actions (frontend mock only)
   const [newJobTitle, setNewJobTitle] = useState("");
   const [newJobDept, setNewJobDept] = useState("Engineering");
-  const [interviewCandidate, setInterviewCandidate] = useState(
-    recentCandidates[0]?.name || "",
-  );
+  const [interviewCandidate, setInterviewCandidate] = useState("");
+  const [interviewApplications, setInterviewApplications] = useState([]);
   const [interviewDate, setInterviewDate] = useState("2026-08-30");
   const [interviewRound, setInterviewRound] = useState("Technical Round 1");
+  const [isCreatingJob, setIsCreatingJob] = useState(false);
+  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
 
   const scrollToCandidates = () => {
     if (candidatesRef.current) {
@@ -43,19 +46,48 @@ export function RecruiterDashboardPage() {
     return recentCandidates.filter((can) => can.stage === selectedStage);
   }, [selectedStage]);
 
-  // Handle quick action submissions (frontend only)
-  const handleCreateJobSubmit = (e) => {
+  const handleCreateJobSubmit = async (e) => {
     e.preventDefault();
     if (!newJobTitle.trim()) return;
-    setActiveModal(null);
-    showToast(`Draft position created: "${newJobTitle}". Ready for campus placement review.`);
-    setNewJobTitle("");
+    setIsCreatingJob(true);
+    try {
+      await jobsApplicationsApi.createDashboardJob(newJobTitle.trim(), newJobDept);
+      setActiveModal(null);
+      showToast(`Draft position created: "${newJobTitle}". Ready for campus placement review.`);
+      setNewJobTitle("");
+    } catch (error) {
+      showToast(error.message || "Unable to create the draft position. Please try again.");
+    } finally {
+      setIsCreatingJob(false);
+    }
   };
 
-  const handleScheduleSubmit = (e) => {
+  useEffect(() => {
+    const loadInterviewApplications = async () => {
+      try {
+        const applications = await interviewsOffersApi.getRecruiterOfferApplications();
+        setInterviewApplications(applications);
+        setInterviewCandidate(applications[0]?.applicationId || "");
+      } catch {
+        // The scheduling form surfaces a clear error if the data cannot be loaded when submitted.
+      }
+    };
+    void loadInterviewApplications();
+  }, []);
+
+  const handleScheduleSubmit = async (e) => {
     e.preventDefault();
-    setActiveModal(null);
-    showToast(`Interview scheduled for ${interviewCandidate} (${interviewRound}) on ${interviewDate}.`);
+    setIsSchedulingInterview(true);
+    try {
+      const selectedApplication = interviewApplications.find((item) => item.applicationId === interviewCandidate);
+      await interviewsOffersApi.createInterview({ applicationId: interviewCandidate, title: interviewRound, date: interviewDate, time: "10:00 AM", location: "NexHire virtual meeting room", workMode: "Virtual" });
+      setActiveModal(null);
+      showToast(`Interview scheduled for ${selectedApplication?.candidateName || "the selected candidate"} (${interviewRound}) on ${interviewDate}.`);
+    } catch (error) {
+      showToast(error.message || "Unable to schedule the interview. Please try again.");
+    } finally {
+      setIsSchedulingInterview(false);
+    }
   };
 
   // Close slide-over drawer on Escape
@@ -755,9 +787,10 @@ export function RecruiterDashboardPage() {
               <Button
                 variant="primary"
                 type="submit"
+                disabled={isCreatingJob}
                 className="text-xs py-2 px-4"
               >
-                Create Position
+                {isCreatingJob ? "Creating…" : "Create Position"}
               </Button>
             </div>
           </form>
@@ -798,9 +831,9 @@ export function RecruiterDashboardPage() {
                   onChange={(e) => setInterviewCandidate(e.target.value)}
                   className="w-full rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs text-[#0B1020] focus:border-[#5146E5] focus:outline-none"
                 >
-                  {recentCandidates.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name} ({c.role})
+                  {interviewApplications.map((application) => (
+                    <option key={application.applicationId} value={application.applicationId}>
+                      {application.candidateName} ({application.role})
                     </option>
                   ))}
                 </select>
@@ -846,9 +879,10 @@ export function RecruiterDashboardPage() {
               <Button
                 variant="primary"
                 type="submit"
+                disabled={isSchedulingInterview || !interviewCandidate}
                 className="text-xs py-2 px-4"
               >
-                Confirm Schedule
+                {isSchedulingInterview ? "Scheduling…" : "Confirm Schedule"}
               </Button>
             </div>
           </form>

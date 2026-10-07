@@ -1,8 +1,13 @@
-import { useState, useMemo, useCallback } from "react";
-import { initialJobs, jobsSummary } from "../data/jobsData.js";
+import { useState, useMemo, useCallback, useContext, useEffect } from "react";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
 
 export function StudentJobsPage() {
-  const [jobs, setJobs] = useState(initialJobs);
+  const { user } = useContext(AuthContext);
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [applyingJobId, setApplyingJobId] = useState(null);
   const [search, setSearch] = useState("");
   const [workModeFilter, setWorkModeFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -17,6 +22,22 @@ export function StudentJobsPage() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const loadJobs = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      setJobs(await jobsApplicationsApi.getStudentJobs(user));
+    } catch (error) {
+      setLoadError(error.message || "Unable to load opportunities. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadJobs);
+  }, [loadJobs]);
 
   const hasActiveFilters =
     search.trim() !== "" ||
@@ -72,12 +93,18 @@ export function StudentJobsPage() {
       });
   }, [jobs, search, workModeFilter, categoryFilter, eligibilityFilter, statusFilter, sortBy]);
 
-  const handleApply = (jobId) => {
-    setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, applied: true } : job)));
-    if (selectedJob && selectedJob.id === jobId) {
-      setSelectedJob((prev) => ({ ...prev, applied: true }));
+  const handleApply = async (jobId) => {
+    setApplyingJobId(jobId);
+    try {
+      await jobsApplicationsApi.createStudentApplication(user, jobId);
+      setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, applied: true } : job)));
+      if (selectedJob?.id === jobId) setSelectedJob((prev) => ({ ...prev, applied: true }));
+      showToast("Application submitted with Active Resume.");
+    } catch (error) {
+      showToast(error.message || "Unable to submit the application. Please try again.");
+    } finally {
+      setApplyingJobId(null);
     }
-    showToast("Application submitted with Active Resume v2.4");
   };
 
 
@@ -102,7 +129,7 @@ export function StudentJobsPage() {
             </p>
           </div>
           <div className="text-xs text-[#56627A]">
-            <span className="font-bold text-[#0B1020]">{jobsSummary.totalOpportunities}</span> Active Drives
+            <span className="font-bold text-[#0B1020]">{jobs.length}</span> Active Drives
           </div>
         </div>
       </header>
@@ -183,7 +210,15 @@ export function StudentJobsPage() {
           Showing {filteredJobs.length} opportunities
         </div>
 
-        {filteredJobs.length === 0 ? (
+        {isLoading ? (
+          <div className="py-20 text-center text-sm text-[#56627A]">Loading opportunities…</div>
+        ) : loadError ? (
+          <div className="py-20 text-center">
+            <p className="text-sm font-bold text-[#0B1020]">Could not load opportunities</p>
+            <p className="mt-2 text-xs text-[#56627A]">{loadError}</p>
+            <button onClick={loadJobs} className="mt-4 text-xs font-bold text-[#5146E5] underline underline-offset-4">Retry</button>
+          </div>
+        ) : filteredJobs.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-sm font-bold text-[#0B1020]">No opportunities match your filters</p>
             <button onClick={handleResetFilters} className="text-xs text-[#5146E5] mt-2 underline underline-offset-4">Reset All</button>
@@ -322,9 +357,10 @@ export function StudentJobsPage() {
               ) : (
                 <button
                   onClick={() => handleApply(selectedJob.id)}
-                  className="w-full py-3 bg-[#0B1020] hover:bg-[#1C2438] transition-colors text-white font-bold text-sm text-center"
+                  disabled={applyingJobId === selectedJob.id}
+                  className="w-full py-3 bg-[#0B1020] hover:bg-[#1C2438] transition-colors text-white font-bold text-sm text-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Submit Application →
+                  {applyingJobId === selectedJob.id ? "Submitting…" : "Submit Application →"}
                 </button>
               )}
             </div>

@@ -1,16 +1,33 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  applicationsSummary,
-  initialApplications,
-} from "../data/applicationsData.js";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
 
 export function StudentApplicationsPage() {
-  const [applications] = useState(initialApplications);
+  const { user } = useContext(AuthContext);
+  const [applications, setApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("All");
 
   const [selectedApp, setSelectedApp] = useState(null);
+
+  const loadApplications = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      setApplications(await jobsApplicationsApi.getStudentApplications(user));
+    } catch (error) {
+      setLoadError(error.message || "Unable to load applications. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadApplications);
+  }, [loadApplications]);
 
   const hasActiveFilters = search.trim() !== "" || stageFilter !== "All";
 
@@ -50,7 +67,7 @@ export function StudentApplicationsPage() {
             </p>
           </div>
           <div className="text-xs text-[#56627A]">
-            <span className="font-bold text-[#0B1020]">{applicationsSummary.total}</span> Active
+            <span className="font-bold text-[#0B1020]">{applications.filter((app) => app.stage !== "Closed").length}</span> Active
           </div>
         </div>
       </header>
@@ -96,7 +113,15 @@ export function StudentApplicationsPage() {
           Showing {filteredApplications.length} applications
         </div>
 
-        {filteredApplications.length === 0 ? (
+        {isLoading ? (
+          <div className="py-20 text-center text-sm text-[#56627A]">Loading applications…</div>
+        ) : loadError ? (
+          <div className="py-20 text-center">
+            <p className="text-sm font-bold text-[#0B1020]">Could not load applications</p>
+            <p className="mt-2 text-xs text-[#56627A]">{loadError}</p>
+            <button onClick={loadApplications} className="mt-4 text-xs font-bold text-[#5146E5] underline underline-offset-4">Retry</button>
+          </div>
+        ) : filteredApplications.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-sm font-bold text-[#0B1020]">No applications found</p>
             <div className="mt-4 space-x-4">

@@ -223,6 +223,23 @@ export function StudentDashboardPage() {
                 Acme Technologies
               </p>
             </Link>
+            <Link
+              to="/student/offers"
+              className="group rounded-xl border border-[#E4E7EF] bg-[#F7F8FC]/50 p-4 transition-all hover:bg-white hover:border-[#5146E5]/40 hover:shadow-2xs cursor-pointer block"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#56627A] group-hover:text-[#0B1020] transition-colors">
+                  Skills
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
+              </div>
+              <p className="mt-2 font-display text-2xl font-extrabold text-[#0B1020] group-hover:text-[#5146E5] transition-colors">
+                {stats.offers}
+              </p>
+              <p className="mt-0.5 text-xs text-[#56627A] truncate">
+                Python, java, cpp
+              </p>
+            </Link>
           </div>
         </div>
       </section>
@@ -249,11 +266,10 @@ export function StudentDashboardPage() {
                 <button
                   key={filter}
                   onClick={() => dispatch({ type: "SET_FILTER", payload: filter })}
-                  className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                    state.filter === filter
-                      ? "bg-white text-[#0B1020] shadow-2xs"
-                      : "text-[#56627A] hover:text-[#0B1020]"
-                  }`}
+                  className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${state.filter === filter
+                    ? "bg-white text-[#0B1020] shadow-2xs"
+                    : "text-[#56627A] hover:text-[#0B1020]"
+                    }`}
                 >
                   {filter}
                 </button>

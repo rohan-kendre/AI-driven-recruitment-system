@@ -1,12 +1,16 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { initialCandidates } from "../data/recruiterCandidatesData.js";
+import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
 
 const STAGES = ["All", "Applied", "Screening", "Shortlisted", "Interview", "Offer"];
 
 export function RecruiterCandidatesPage() {
-  const [candidates, setCandidates] = useState(initialCandidates);
+  const [candidates, setCandidates] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [updatingCandidateId, setUpdatingCandidateId] = useState(null);
   const [selectedStage, setSelectedStage] = useState("All");
   const [selectedJobId, setSelectedJobId] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,6 +21,24 @@ export function RecruiterCandidatesPage() {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 5000);
   };
+
+  const loadCandidates = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      const data = await jobsApplicationsApi.getRecruiterCandidates();
+      setCandidates(data.candidates);
+      setJobs(data.jobs);
+    } catch (error) {
+      setLoadError(error.message || "Unable to load candidates. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadCandidates);
+  }, [loadCandidates]);
 
   // Pipeline stage counts
   const stageCounts = useMemo(() => {
@@ -53,57 +75,32 @@ export function RecruiterCandidatesPage() {
     });
   }, [candidates, selectedStage, selectedJobId, searchQuery]);
 
-  // Handle stage progression (local frontend state only)
-  const handleAdvanceStage = (candidateId, nextStage, actionLabel) => {
-    setCandidates((prev) =>
-      prev.map((c) => {
-        if (c.id === candidateId) {
-          const updatedTimeline = [
-            ...c.timeline,
-            {
-              stage: nextStage,
-              date: "Today",
-              note: `Recruiter action: ${actionLabel}`,
-            },
-          ];
-          return {
-            ...c,
-            stage: nextStage,
-            timeline: updatedTimeline,
-          };
-        }
-        return c;
-      }),
-    );
-
-    if (selectedCandidate && selectedCandidate.id === candidateId) {
-      setSelectedCandidate((prev) => ({
-        ...prev,
-        stage: nextStage,
-        timeline: [
-          ...prev.timeline,
-          {
-            stage: nextStage,
-            date: "Today",
-            note: `Recruiter action: ${actionLabel}`,
-          },
-        ],
-      }));
+  const handleAdvanceStage = async (candidateId, nextStage) => {
+    setUpdatingCandidateId(candidateId);
+    try {
+      await jobsApplicationsApi.updateRecruiterApplicationStatus(candidateId, nextStage);
+      await loadCandidates();
+      setSelectedCandidate(null);
+      showToast(`Candidate moved to ${nextStage}.`);
+    } catch (error) {
+      showToast(error.message || "Unable to update the candidate stage. Please try again.");
+    } finally {
+      setUpdatingCandidateId(null);
     }
-
-    showToast(`Candidate moved to ${nextStage}.`);
   };
 
-  const handleDeclineCandidate = (candidateId) => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.id === candidateId ? { ...c, stage: "Declined" } : c,
-      ),
-    );
-    if (selectedCandidate && selectedCandidate.id === candidateId) {
-      setSelectedCandidate((prev) => ({ ...prev, stage: "Declined" }));
+  const handleDeclineCandidate = async (candidateId) => {
+    setUpdatingCandidateId(candidateId);
+    try {
+      await jobsApplicationsApi.updateRecruiterApplicationStatus(candidateId, "Rejected");
+      await loadCandidates();
+      setSelectedCandidate(null);
+      showToast("Candidate marked as declined for this recruitment drive.");
+    } catch (error) {
+      showToast(error.message || "Unable to decline this candidate. Please try again.");
+    } finally {
+      setUpdatingCandidateId(null);
     }
-    showToast("Candidate marked as declined for this recruitment drive.");
   };
 
   // Close drawer on Escape key
@@ -227,9 +224,7 @@ export function RecruiterCandidatesPage() {
             className="rounded-xl border border-[#E4E7EF] bg-white py-2 px-3 text-xs text-[#0B1020] focus:border-[#5146E5] focus:outline-none"
           >
             <option value="All">All Positions</option>
-            <option value="JOB-1">Software Engineer Intern</option>
-            <option value="JOB-2">Frontend Developer</option>
-            <option value="JOB-3">Backend Systems Engineer</option>
+            {jobs.map((job) => <option key={job.id} value={job.id}>{job.title || job.name}</option>)}
           </select>
 
           {(searchQuery || selectedStage !== "All" || selectedJobId !== "All") && (
@@ -256,7 +251,15 @@ export function RecruiterCandidatesPage() {
           </span>
         </div>
 
-        {filteredCandidates.length === 0 ? (
+        {isLoading ? (
+          <div className="py-12 text-center text-sm text-[#56627A]">Loading candidates…</div>
+        ) : loadError ? (
+          <div className="py-12 text-center">
+            <p className="font-display text-base font-bold text-[#0B1020]">Could not load candidates</p>
+            <p className="mt-2 text-xs text-[#56627A]">{loadError}</p>
+            <button onClick={loadCandidates} className="mt-4 text-xs font-bold text-[#5146E5] underline underline-offset-4">Retry</button>
+          </div>
+        ) : filteredCandidates.length === 0 ? (
           /* Simple Empty State */
           <div className="py-12 text-center space-y-3">
             <h3 className="font-display text-base font-bold text-[#0B1020]">
@@ -300,9 +303,9 @@ export function RecruiterCandidatesPage() {
                       CGPA {candidate.cgpa}
                     </span>
                     <span className="text-slate-300">·</span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#16886A]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
-                      Eligible
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${candidate.eligibility.status === "Eligible" ? "text-[#16886A]" : "text-amber-700"}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${candidate.eligibility.status === "Eligible" ? "bg-[#16886A]" : "bg-amber-500"}`} />
+                      {candidate.eligibility.status}
                     </span>
                   </div>
 
@@ -440,8 +443,8 @@ export function RecruiterCandidatesPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#5146E5]">
                     Eligibility
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#16886A]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${selectedCandidate.eligibility.status === "Eligible" ? "text-[#16886A]" : "text-amber-700"}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${selectedCandidate.eligibility.status === "Eligible" ? "bg-[#16886A]" : "bg-amber-500"}`} />
                     {selectedCandidate.eligibility.status}
                   </span>
                 </div>
@@ -453,7 +456,7 @@ export function RecruiterCandidatesPage() {
                     <p className="font-bold text-[#0B1020] text-xs mt-0.5">
                       {selectedCandidate.cgpa} / 10.00
                     </p>
-                    <p className="text-[10px] text-[#56627A]">7.50 required</p>
+                    <p className="text-[10px] text-[#56627A]">Requirement pending backend eligibility rules</p>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold uppercase text-[#56627A]">
@@ -543,6 +546,7 @@ export function RecruiterCandidatesPage() {
             <div className="border-t border-[#E4E7EF] p-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
                 onClick={() => handleDeclineCandidate(selectedCandidate.id)}
+                disabled={updatingCandidateId === selectedCandidate.id}
                 className="text-xs text-rose-600 hover:text-rose-700 font-semibold py-2 px-3 text-center sm:text-left"
               >
                 Decline candidate
@@ -560,6 +564,7 @@ export function RecruiterCandidatesPage() {
                 {selectedCandidate.stage === "Applied" && (
                   <Button
                     variant="primary"
+                    disabled={updatingCandidateId === selectedCandidate.id}
                     onClick={() =>
                       handleAdvanceStage(selectedCandidate.id, "Screening", "Moved to Screening")
                     }
@@ -572,6 +577,7 @@ export function RecruiterCandidatesPage() {
                 {selectedCandidate.stage === "Screening" && (
                   <Button
                     variant="primary"
+                    disabled={updatingCandidateId === selectedCandidate.id}
                     onClick={() =>
                       handleAdvanceStage(selectedCandidate.id, "Shortlisted", "Shortlisted Candidate")
                     }
@@ -584,6 +590,7 @@ export function RecruiterCandidatesPage() {
                 {selectedCandidate.stage === "Shortlisted" && (
                   <Button
                     variant="primary"
+                    disabled={updatingCandidateId === selectedCandidate.id}
                     onClick={() =>
                       handleAdvanceStage(selectedCandidate.id, "Interview", "Scheduled Technical Interview")
                     }
@@ -596,6 +603,7 @@ export function RecruiterCandidatesPage() {
                 {selectedCandidate.stage === "Interview" && (
                   <Button
                     variant="primary"
+                    disabled={updatingCandidateId === selectedCandidate.id}
                     onClick={() =>
                       handleAdvanceStage(selectedCandidate.id, "Offer", "Extended Placement Offer")
                     }

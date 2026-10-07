@@ -1,26 +1,49 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { initialOffers } from "../data/offersData.js";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
 
 export function StudentOffersPage() {
-  const [offers, setOffers] = useState(initialOffers);
+  const { user } = useContext(AuthContext);
+  const [offers, setOffers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [decisionModal, setDecisionModal] = useState(null);
   const [feedbackToast, setFeedbackToast] = useState(null);
   const documentRef = useRef(null);
 
+  const loadOffers = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      setOffers(await interviewsOffersApi.getStudentOffers(user));
+    } catch (error) {
+      setLoadError(error.message || "Unable to load offers. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadOffers);
+  }, [loadOffers]);
+
   const activeOffer = useMemo(() => offers.find((o) => o.isPrimary) || offers[0] || null, [offers]);
 
-  const handleConfirmDecision = (offerId, newStatus) => {
-    setOffers((prev) => prev.map((offer) => offer.id === offerId ? { ...offer, status: newStatus } : offer));
-    setDecisionModal(null);
-    setFeedbackToast(newStatus === "Accepted" ? "Offer accepted. Record updated." : "Offer declined.");
-    setTimeout(() => setFeedbackToast(null), 6000);
-  };
-
-  const handleResetDecision = (offerId) => {
-    setOffers((prev) => prev.map((offer) => offer.id === offerId ? { ...offer, status: "Pending review" } : offer));
-    setFeedbackToast("Offer status reset.");
-    setTimeout(() => setFeedbackToast(null), 4000);
+  const handleConfirmDecision = async (offerId, newStatus) => {
+    setIsSaving(true);
+    try {
+      await interviewsOffersApi.updateOfferStatus(offerId, newStatus);
+      setDecisionModal(null);
+      await loadOffers();
+      setFeedbackToast(newStatus === "Accepted" ? "Offer accepted. Record updated." : "Offer declined.");
+      setTimeout(() => setFeedbackToast(null), 6000);
+    } catch (error) {
+      setFeedbackToast(error.message || "Unable to update the offer. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const scrollToDocument = () => {
@@ -58,7 +81,15 @@ export function StudentOffersPage() {
       )}
 
       {/* 2. ACTIVE OFFER */}
-      {!activeOffer ? (
+      {isLoading ? (
+        <div className="py-20 text-center text-sm text-[#56627A]">Loading offers…</div>
+      ) : loadError ? (
+        <div className="py-20 text-center">
+          <p className="text-sm font-bold text-[#0B1020]">Could not load offers</p>
+          <p className="mt-2 text-xs text-[#56627A]">{loadError}</p>
+          <button onClick={loadOffers} className="mt-4 text-xs font-bold text-[#5146E5] underline underline-offset-4">Retry</button>
+        </div>
+      ) : !activeOffer ? (
         <div className="py-20 text-center">
           <p className="text-sm font-bold text-[#0B1020]">No offers yet</p>
           <div className="mt-4 space-x-4">
@@ -116,9 +147,6 @@ export function StudentOffersPage() {
                     <div className="bg-[#F7F8FC] text-[#0B1020] px-8 py-4 text-sm font-bold text-center w-full">
                       {activeOffer.status === "Accepted" ? "Offer Accepted ✓" : "Offer Declined ✕"}
                     </div>
-                    <button onClick={() => handleResetDecision(activeOffer.id)} className="text-[10px] text-[#56627A] hover:underline underline-offset-4 w-full text-center sm:text-right mt-1">
-                      Reset decision
-                    </button>
                   </>
                 )}
                 <button onClick={scrollToDocument} className="text-xs font-bold text-[#5146E5] mt-2 underline underline-offset-4">
@@ -220,9 +248,10 @@ export function StudentOffersPage() {
               </button>
               <button 
                 onClick={() => handleConfirmDecision(decisionModal.offerId, decisionModal.type === "accept" ? "Accepted" : "Declined")}
+                disabled={isSaving}
                 className={`flex-1 py-3 text-xs font-bold text-white ${decisionModal.type === 'accept' ? 'bg-[#0B1020] hover:bg-[#1C2438]' : 'bg-rose-700 hover:bg-rose-800'}`}
               >
-                Confirm
+                {isSaving ? "Saving…" : "Confirm"}
               </button>
             </div>
           </div>

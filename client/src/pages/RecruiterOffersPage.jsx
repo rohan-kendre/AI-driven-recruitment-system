@@ -1,21 +1,23 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { initialRecruiterOffers } from "../data/recruiterOffersData.js";
-import { initialCandidates } from "../data/recruiterCandidatesData.js";
-import { initialRecruiterJobs } from "../data/recruiterJobsData.js";
+import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
 
 const OFFER_STATUS_TABS = ["All", "Awaiting response", "Sent", "Accepted", "Draft", "Declined"];
 
 export function RecruiterOffersPage() {
-  const [offers, setOffers] = useState(initialRecruiterOffers);
+  const [offers, setOffers] = useState([]);
+  const [offerApplications, setOfferApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedStatusTab, setSelectedStatusTab] = useState("All");
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState(null);
 
   // Form state for Create Offer modal
-  const [newCandidateId, setNewCandidateId] = useState(initialCandidates[0]?.id || "");
-  const [newRoleId, setNewRoleId] = useState(initialRecruiterJobs[0]?.id || "");
+  const [newCandidateId, setNewCandidateId] = useState("");
+  const [newRoleId, setNewRoleId] = useState("");
   const [newStipend, setNewStipend] = useState("₹45,000 / month");
   const [newCtc, setNewCtc] = useState("18.5 LPA");
   const [newJoiningDate, setNewJoiningDate] = useState("15 Jan 2027");
@@ -25,6 +27,26 @@ export function RecruiterOffersPage() {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 5000);
   };
+
+  const loadOffers = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      const [nextOffers, applications] = await Promise.all([interviewsOffersApi.getRecruiterOffers(), interviewsOffersApi.getRecruiterOfferApplications()]);
+      setOffers(nextOffers);
+      setOfferApplications(applications);
+      setNewCandidateId((current) => current || applications[0]?.applicationId || "");
+      setNewRoleId((current) => current || applications[0]?.jobId || "");
+    } catch (error) {
+      setLoadError(error.message || "Unable to load offers. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadOffers);
+  }, [loadOffers]);
 
   // Filtered offers list
   const filteredOffers = useMemo(() => {
@@ -41,55 +63,34 @@ export function RecruiterOffersPage() {
     return counts;
   }, [offers]);
 
-  // Handle local state Create Offer submit
-  const handleCreateOfferSubmit = (e) => {
+  const handleCreateOfferSubmit = async (e) => {
     e.preventDefault();
-    const candidateObj = initialCandidates.find((c) => c.id === newCandidateId) || {
-      name: "Selected Candidate",
-      applicationId: "APP-NEW",
-    };
-    const jobObj = initialRecruiterJobs.find((j) => j.id === newRoleId) || {
-      role: "Software Engineer Intern",
-      department: "Engineering",
-    };
-
-    const newOffer = {
-      id: `OFR-REC-${Date.now().toString().slice(-4)}`,
-      candidateId: candidateObj.id,
-      applicationId: candidateObj.applicationId || "APP-NEW",
-      candidateName: candidateObj.name,
-      role: jobObj.role,
-      company: "Acme Technologies",
-      stipend: newStipend,
-      ctc: newCtc,
-      status: "Draft",
-      joiningDate: newJoiningDate,
-      decisionDeadline: newDeadline,
-      issuedDate: "Just drafted",
-      department: jobObj.department || "Core Platform",
-      location: "Acme Tech Park, Mumbai",
-      workMode: "Hybrid",
-      notes: "Newly drafted campus placement offer awaiting final internal review.",
-      compensationBreakdown: [
-        { label: "Internship Stipend", value: newStipend, period: "Internship phase" },
-        { label: "Full-Time CTC", value: newCtc, period: "Annual base upon conversion" },
-      ],
-    };
-
-    setOffers((prev) => [newOffer, ...prev]);
-    setCreateModalOpen(false);
-    showToast(`Draft offer created for ${candidateObj.name}. Ready for placement office review.`);
+    const candidate = offerApplications.find((item) => item.applicationId === newCandidateId);
+    setIsSaving(true);
+    try {
+      await interviewsOffersApi.createOffer({ applicationId: newCandidateId, stipend: newStipend, ctc: newCtc, joiningDate: newJoiningDate, deadline: newDeadline });
+      setCreateModalOpen(false);
+      await loadOffers();
+      showToast(`Offer created for ${candidate?.candidateName || "the selected candidate"}.`);
+    } catch (error) {
+      showToast(error.message || "Unable to create this offer. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Local state status change (e.g. Release Draft or Revoke)
-  const handleUpdateStatus = (offerId, nextStatus) => {
-    setOffers((prev) =>
-      prev.map((o) => (o.id === offerId ? { ...o, status: nextStatus } : o)),
-    );
-    if (selectedOffer && selectedOffer.id === offerId) {
-      setSelectedOffer((prev) => ({ ...prev, status: nextStatus }));
+  const handleUpdateStatus = async (offerId, nextStatus) => {
+    setIsSaving(true);
+    try {
+      await interviewsOffersApi.updateOfferStatus(offerId, nextStatus);
+      setSelectedOffer(null);
+      await loadOffers();
+      showToast(`Offer status updated to ${nextStatus}.`);
+    } catch (error) {
+      showToast(error.message || "Unable to update this offer. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-    showToast(`Offer status updated to ${nextStatus}.`);
   };
 
   // Close drawer on Escape
@@ -216,7 +217,15 @@ export function RecruiterOffersPage() {
           <span className="hidden sm:inline text-[#8F9CAE]">Click any offer to inspect details</span>
         </div>
 
-        {filteredOffers.length === 0 ? (
+        {isLoading ? (
+          <div className="py-16 text-center text-sm text-[#56627A]">Loading offers…</div>
+        ) : loadError ? (
+          <div className="py-16 text-center">
+            <p className="text-sm font-semibold text-[#0B1020]">Could not load offers</p>
+            <p className="mt-1 text-xs text-[#56627A]">{loadError}</p>
+            <button onClick={loadOffers} className="mt-4 text-xs font-semibold text-[#5146E5] hover:underline">Retry</button>
+          </div>
+        ) : filteredOffers.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-sm font-semibold text-[#0B1020]">No offers found</p>
             <p className="mt-1 text-xs text-[#56627A]">
@@ -487,7 +496,7 @@ export function RecruiterOffersPage() {
                 Draft Placement Offer
               </h3>
               <p className="mt-1 text-xs text-[#56627A]">
-                Prepare an employment offer for an eligible student. Changes are saved locally.
+                Prepare an employment offer for an eligible student. Changes are saved to MockAPI.
               </p>
             </div>
 
@@ -499,12 +508,16 @@ export function RecruiterOffersPage() {
                   </label>
                   <select
                     value={newCandidateId}
-                    onChange={(e) => setNewCandidateId(e.target.value)}
+                    onChange={(e) => {
+                      const application = offerApplications.find((item) => item.applicationId === e.target.value);
+                      setNewCandidateId(e.target.value);
+                      setNewRoleId(application?.jobId || "");
+                    }}
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                   >
-                    {initialCandidates.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.role})
+                    {offerApplications.map((application) => (
+                      <option key={application.applicationId} value={application.applicationId}>
+                        {application.candidateName} ({application.role})
                       </option>
                     ))}
                   </select>
@@ -519,9 +532,9 @@ export function RecruiterOffersPage() {
                     onChange={(e) => setNewRoleId(e.target.value)}
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                   >
-                    {initialRecruiterJobs.map((j) => (
-                      <option key={j.id} value={j.id}>
-                        {j.role}
+                    {offerApplications.map((application) => (
+                      <option key={application.applicationId} value={application.jobId}>
+                        {application.role}
                       </option>
                     ))}
                   </select>
@@ -598,9 +611,10 @@ export function RecruiterOffersPage() {
                 </button>
                 <button
                   type="submit"
+                  disabled={isSaving || !newCandidateId}
                   className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors shadow-subtle"
                 >
-                  Save draft offer
+                  {isSaving ? "Saving…" : "Save draft offer"}
                 </button>
               </div>
             </form>
