@@ -47,8 +47,8 @@ export const tpoController = {
           offersCount,
           acceptedOffers,
           placementRate,
-          averagePackage: "18.5 LPA",
-          highestPackage: "42.0 LPA",
+          averagePackage: null,
+          highestPackage: null,
         },
       });
     } catch (err) {

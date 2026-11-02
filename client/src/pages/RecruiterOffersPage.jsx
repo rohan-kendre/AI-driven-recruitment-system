@@ -19,10 +19,10 @@ export function RecruiterOffersPage() {
   // Form state for Create Offer modal
   const [newCandidateId, setNewCandidateId] = useState("");
   const [newRoleId, setNewRoleId] = useState("");
-  const [newStipend, setNewStipend] = useState("₹45,000 / month");
-  const [newCtc, setNewCtc] = useState("18.5 LPA");
-  const [newJoiningDate, setNewJoiningDate] = useState("15 Jan 2027");
-  const [newDeadline, setNewDeadline] = useState("10 Sep 2026");
+  const [newStipend, setNewStipend] = useState("");
+  const [newCtc, setNewCtc] = useState("");
+  const [newJoiningDate, setNewJoiningDate] = useState("");
+  const [newDeadline, setNewDeadline] = useState("");
 
   const showToast = (msg) => {
     setFeedbackToast(msg);
@@ -49,8 +49,6 @@ export function RecruiterOffersPage() {
       }));
       setOffers(mappedOffers);
       setOfferApplications(applications);
-      setNewCandidateId((current) => current || applications[0]?.applicationId || "");
-      setNewRoleId((current) => current || applications[0]?.jobId || "");
     } catch (error) {
       setLoadError(error.response?.data?.message || error.message || "Unable to load offers. Please try again.");
     } finally {
@@ -90,6 +88,12 @@ export function RecruiterOffersPage() {
         deadline: newDeadline,
       });
       setCreateModalOpen(false);
+      setNewCandidateId("");
+      setNewRoleId("");
+      setNewStipend("");
+      setNewCtc("");
+      setNewJoiningDate("");
+      setNewDeadline("");
       await loadOffers();
       showToast(`Offer created for ${candidate?.candidateName || "the selected candidate"}.`);
     } catch (error) {
@@ -512,10 +516,10 @@ export function RecruiterOffersPage() {
                 Campus Recruitment
               </span>
               <h3 className="mt-1 font-display text-xl font-bold text-[#0B1020]">
-                Draft Placement Offer
+                Create Placement Offer
               </h3>
               <p className="mt-1 text-xs text-[#56627A]">
-                Prepare an employment offer for an eligible student. Changes are saved to MockAPI.
+                Prepare an employment offer for an eligible student.
               </p>
             </div>
 
@@ -526,6 +530,7 @@ export function RecruiterOffersPage() {
                     Candidate
                   </label>
                   <select
+                    required
                     value={newCandidateId}
                     onChange={(e) => {
                       const application = offerApplications.find((item) => item.applicationId === e.target.value);
@@ -534,6 +539,7 @@ export function RecruiterOffersPage() {
                     }}
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                   >
+                    <option value="">Select a candidate</option>
                     {offerApplications.map((application) => (
                       <option key={application.applicationId} value={application.applicationId}>
                         {application.candidateName} ({application.role})
@@ -548,14 +554,11 @@ export function RecruiterOffersPage() {
                   </label>
                   <select
                     value={newRoleId}
-                    onChange={(e) => setNewRoleId(e.target.value)}
+                    disabled
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                   >
-                    {offerApplications.map((application) => (
-                      <option key={application.applicationId} value={application.jobId}>
-                        {application.role}
-                      </option>
-                    ))}
+                    <option value="">Select a position</option>
+                    {offerApplications.filter((application) => application.applicationId === newCandidateId).map((application) => <option key={application.applicationId} value={application.jobId}>{application.role}</option>)}
                   </select>
                 </div>
               </div>
@@ -596,11 +599,10 @@ export function RecruiterOffersPage() {
                     Expected Joining Date
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     required
                     value={newJoiningDate}
                     onChange={(e) => setNewJoiningDate(e.target.value)}
-                    placeholder="e.g. 15 Jan 2027"
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                   />
                 </div>
@@ -610,11 +612,10 @@ export function RecruiterOffersPage() {
                     Decision Deadline
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     required
                     value={newDeadline}
                     onChange={(e) => setNewDeadline(e.target.value)}
-                    placeholder="e.g. 10 Sep 2026"
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                   />
                 </div>
@@ -633,7 +634,7 @@ export function RecruiterOffersPage() {
                   disabled={isSaving || !newCandidateId}
                   className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors shadow-subtle"
                 >
-                  {isSaving ? "Saving…" : "Save draft offer"}
+                  {isSaving ? "Saving…" : "Create offer"}
                 </button>
               </div>
             </form>

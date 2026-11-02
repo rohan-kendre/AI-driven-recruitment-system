@@ -96,33 +96,21 @@ function formatDate(value) {
       }).format(date);
 }
 
-/**
- * Resolves or auto-provisions a company for a recruiter
- */
+/** Resolves a company owned by this recruiter without creating sample data. */
 export async function resolveRecruiterCompany(recruiterId, explicitCompanyId = null) {
-  if (explicitCompanyId && mongoose.Types.ObjectId.isValid(explicitCompanyId)) {
-    const comp = await Company.findById(explicitCompanyId);
-    if (comp) return comp;
-  }
-
-  // Look for any existing company created by or associated with this recruiter
-  let comp = await Company.findOne({ createdBy: recruiterId });
-  if (!comp) {
-    // Look for default Acme Technologies or create one
-    comp = await Company.findOne({ name: "Acme Technologies" });
-    if (!comp) {
-      comp = await Company.create({
-        name: "Acme Technologies",
-        industry: "Enterprise Software & Cloud Platforms",
-        location: "Mumbai",
-        website: "https://acme-technologies.demo",
-        description: "Campus placement drive partner.",
-        status: "APPROVED",
-        createdBy: recruiterId,
-      });
+  if (explicitCompanyId) {
+    if (!mongoose.Types.ObjectId.isValid(explicitCompanyId)) {
+      const error = new Error("Invalid company ID");
+      error.statusCode = 400;
+      throw error;
     }
+    const comp = await Company.findOne({ _id: explicitCompanyId, createdBy: recruiterId });
+    if (comp) return comp;
+    const error = new Error("Company not found for this recruiter");
+    error.statusCode = 404;
+    throw error;
   }
-  return comp;
+  return Company.findOne({ createdBy: recruiterId });
 }
 
 export const jobService = {
@@ -162,7 +150,7 @@ export const jobService = {
       const profileMatch =
         jobSkills.length > 0
           ? Math.round((matchedSkills.length / jobSkills.length) * 100)
-          : 85;
+          : 0;
 
       return {
         id: job._id.toString(),
@@ -296,6 +284,11 @@ export const jobService = {
     }
 
     const company = await resolveRecruiterCompany(recruiterUserId, data.companyId);
+    if (!company) {
+      const error = new Error("Complete your company profile before creating a job.");
+      error.statusCode = 400;
+      throw error;
+    }
 
     // Parse skills if string
     let requiredSkills = data.requiredSkills || [];
@@ -313,49 +306,62 @@ export const jobService = {
 
     // Parse eligibility criteria
     const eligibility = {
-      minCgpa: Number(data.eligibility?.minCgpa ?? (data.minCgpa || 7.0)),
+      minCgpa: Number(data.eligibility?.minCgpa ?? data.minCgpa ?? 0),
       allowedBranches: Array.isArray(data.eligibility?.allowedBranches)
         ? data.eligibility.allowedBranches
-        : ["Computer Engineering", "Information Technology", "AI & Data Science"],
-      maxBacklogs: Number(data.eligibility?.maxBacklogs ?? (data.maxBacklogs || 0)),
+        : [],
+      maxBacklogs: Number(data.eligibility?.maxBacklogs ?? data.maxBacklogs ?? 0),
       graduationYears: Array.isArray(data.eligibility?.graduationYears)
         ? data.eligibility.graduationYears
-        : [2026, 2027, 2028],
+        : [],
     };
 
     // Parse deadline
-    let deadline = data.deadline ? new Date(data.deadline) : new Date(Date.now() + 30 * 86400000);
-    if (Number.isNaN(deadline.getTime())) {
-      deadline = new Date(Date.now() + 30 * 86400000);
+    const deadline = data.deadline ? new Date(data.deadline) : null;
+    if (!deadline || Number.isNaN(deadline.getTime())) {
+      const error = new Error("A valid application deadline is required.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!data.description?.trim() || !data.location?.trim()) {
+      const error = new Error("Job description and location are required.");
+      error.statusCode = 400;
+      throw error;
     }
 
     // Normalize workMode
-    let workMode = "HYBRID";
-    if (data.workMode) {
-      const raw = data.workMode.toUpperCase();
-      if (raw.includes("REMOTE")) workMode = "REMOTE";
-      else if (raw.includes("ONSITE") || raw.includes("CAMPUS")) workMode = "ONSITE";
-      else workMode = "HYBRID";
+    if (!data.workMode) {
+      const error = new Error("Work mode is required.");
+      error.statusCode = 400;
+      throw error;
     }
+    const raw = data.workMode.toUpperCase();
+    if (!["ONSITE", "HYBRID", "REMOTE"].includes(raw)) {
+      const error = new Error("Work mode must be ONSITE, HYBRID, or REMOTE.");
+      error.statusCode = 400;
+      throw error;
+    }
+    const workMode = raw;
 
     const job = await Job.create({
       title: title.trim(),
-      description: data.description || `Campus recruitment drive for ${title.trim()}.`,
+      description: data.description.trim(),
       companyId: company._id,
       recruiterId: recruiterUserId,
-      location: data.location || "Mumbai",
+      location: data.location.trim(),
       workMode,
-      employmentType: data.employmentType || "Full-time",
-      domain: data.domain || "Software Engineering",
-      ctc: data.ctc || "18.5 LPA CTC",
-      stipend: data.stipend || "₹45,000 / month",
-      duration: data.duration || "6 Months",
+      employmentType: data.employmentType || "",
+      domain: data.domain || "",
+      ctc: data.ctc || "",
+      stipend: data.stipend || "",
+      duration: data.duration || "",
       deadline,
       eligibility,
       requiredSkills,
       preferredSkills,
       selectionRounds,
-      status: data.status === "DRAFT" || data.status === "Draft" ? "DRAFT" : "OPEN",
+      status: ["DRAFT", "OPEN", "CLOSED"].includes(data.status?.toUpperCase()) ? data.status.toUpperCase() : "DRAFT",
     });
 
     return job;
@@ -376,6 +382,15 @@ export const jobService = {
     if (title) job.title = title.trim();
     if (data.description) job.description = data.description;
     if (data.location) job.location = data.location;
+    if (data.workMode) {
+      const mode = data.workMode.toUpperCase();
+      if (!["ONSITE", "HYBRID", "REMOTE"].includes(mode)) {
+        const error = new Error("Invalid work mode.");
+        error.statusCode = 400;
+        throw error;
+      }
+      job.workMode = mode;
+    }
     if (data.ctc) job.ctc = data.ctc;
     if (data.stipend) job.stipend = data.stipend;
     if (data.domain) job.domain = data.domain;
@@ -397,6 +412,15 @@ export const jobService = {
       job.selectionRounds = typeof data.selectionRounds === "string"
         ? data.selectionRounds.split(",").map((s) => s.trim()).filter(Boolean)
         : data.selectionRounds;
+    }
+    if (data.eligibility && typeof data.eligibility === "object") {
+      const criteria = data.eligibility;
+      job.eligibility = {
+        minCgpa: Number(criteria.minCgpa ?? 0),
+        maxBacklogs: Number(criteria.maxBacklogs ?? 0),
+        allowedBranches: Array.isArray(criteria.allowedBranches) ? criteria.allowedBranches : [],
+        graduationYears: Array.isArray(criteria.graduationYears) ? criteria.graduationYears : [],
+      };
     }
 
     await job.save();

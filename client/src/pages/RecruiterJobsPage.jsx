@@ -2,6 +2,13 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Badge, Button, Toast } from "../components/ui.jsx";
 import { jobsApi } from "../services/jobsApi.js";
 
+const emptyJobForm = {
+  role: "", description: "", domain: "", location: "", workMode: "",
+  stipend: "", ctc: "", deadline: "", requiredSkills: "",
+  minCgpa: "", maxBacklogs: "", allowedBranches: "", graduationYears: "",
+  selectionRounds: "", status: "DRAFT",
+};
+
 export function RecruiterJobsPage() {
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,19 +20,7 @@ export function RecruiterJobsPage() {
   const [feedbackToast, setFeedbackToast] = useState(null);
 
   // Form state for Create / Edit
-  const [formData, setFormData] = useState({
-    role: "",
-    domain: "",
-    location: "Mumbai",
-    workMode: "Hybrid / On campus drive",
-    stipend: "₹45,000 / month",
-    ctc: "18.5 LPA CTC",
-    deadline: "2026-09-15",
-    requiredSkills: "React, Node.js, TypeScript",
-    eligibility: "B.Tech Computer Engineering / IT, CGPA >= 7.50, 0 active backlogs",
-    selectionRounds: "Online Technical Screening, Technical Round 1, HR & Fitment",
-    status: "Open",
-  });
+  const [formData, setFormData] = useState(emptyJobForm);
 
   const showToast = (msg) => {
     setFeedbackToast(msg);
@@ -51,19 +46,7 @@ export function RecruiterJobsPage() {
 
   const openCreateModal = () => {
     setEditingJob(null);
-    setFormData({
-      role: "",
-      domain: "Core Engineering",
-      location: "Mumbai Tech Park",
-      workMode: "Hybrid / On campus drive",
-      stipend: "₹45,000 / month",
-      ctc: "18.5 LPA CTC",
-      deadline: "2026-09-15",
-      requiredSkills: "React, Node.js, TypeScript, Algorithms",
-      eligibility: "B.Tech Computer Engineering / IT, CGPA >= 7.50, 0 active backlogs",
-      selectionRounds: "Technical Screening, Technical Interview, HR Fitment",
-      status: "Open",
-    });
+    setFormData(emptyJobForm);
     setModalMode("create");
   };
 
@@ -71,6 +54,7 @@ export function RecruiterJobsPage() {
     setEditingJob(job);
     setFormData({
       role: job.role,
+      description: job.description || "",
       domain: job.domain,
       location: job.location,
       workMode: job.workMode,
@@ -80,7 +64,10 @@ export function RecruiterJobsPage() {
       requiredSkills: Array.isArray(job.requiredSkills)
         ? job.requiredSkills.join(", ")
         : job.requiredSkills,
-      eligibility: job.eligibility,
+      minCgpa: job.eligibilityCriteria?.minCgpa ?? "",
+      maxBacklogs: job.eligibilityCriteria?.maxBacklogs ?? "",
+      allowedBranches: (job.eligibilityCriteria?.allowedBranches || []).join(", "),
+      graduationYears: (job.eligibilityCriteria?.graduationYears || []).join(", "),
       selectionRounds: Array.isArray(job.selectionRounds)
         ? job.selectionRounds.join(", ")
         : job.selectionRounds,
@@ -93,11 +80,20 @@ export function RecruiterJobsPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      const payload = {
+        ...formData,
+        eligibility: {
+          minCgpa: formData.minCgpa === "" ? 0 : Number(formData.minCgpa),
+          maxBacklogs: formData.maxBacklogs === "" ? 0 : Number(formData.maxBacklogs),
+          allowedBranches: formData.allowedBranches.split(",").map((value) => value.trim()).filter(Boolean),
+          graduationYears: formData.graduationYears.split(",").map((value) => Number(value.trim())).filter(Boolean),
+        },
+      };
       if (modalMode === "create") {
-        await jobsApi.createJob(formData);
-        showToast(`Position created: "${formData.role}". Campus drive is now open.`);
+        await jobsApi.createJob(payload);
+        showToast(`Position created: "${formData.role}".`);
       } else if (modalMode === "edit" && editingJob) {
-        await jobsApi.updateJob(editingJob.id || editingJob._id, formData);
+        await jobsApi.updateJob(editingJob.id || editingJob._id, payload);
         showToast(`Position updated: "${formData.role}".`);
       }
       setModalMode(null);
@@ -556,6 +552,17 @@ export function RecruiterJobsPage() {
                 />
               </div>
 
+              <div className="sm:col-span-2">
+                <label className="block font-semibold text-[#0B1020] mb-1">Job Description</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  className="w-full rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs text-[#0B1020] focus:border-[#5146E5] focus:outline-none"
+                />
+              </div>
+
               <div>
                 <label className="block font-semibold text-[#0B1020] mb-1">
                   Domain / Department
@@ -592,16 +599,17 @@ export function RecruiterJobsPage() {
                   Work Mode
                 </label>
                 <select
+                  required
                   value={formData.workMode}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, workMode: e.target.value }))
                   }
                   className="w-full rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs text-[#0B1020] focus:border-[#5146E5] focus:outline-none"
                 >
-                  <option value="Hybrid / On campus drive">Hybrid / On campus drive</option>
-                  <option value="On campus">On campus</option>
-                  <option value="On-site">On-site</option>
-                  <option value="Remote">Remote</option>
+                  <option value="">Select work mode</option>
+                  <option value="HYBRID">Hybrid</option>
+                  <option value="ONSITE">On-site</option>
+                  <option value="REMOTE">Remote</option>
                 </select>
               </div>
 
@@ -610,9 +618,8 @@ export function RecruiterJobsPage() {
                   Application Deadline
                 </label>
                 <input
-                  type="text"
+                  type="date"
                   required
-                  placeholder="e.g. 30 Sep 2026"
                   value={formData.deadline}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, deadline: e.target.value }))
@@ -673,22 +680,13 @@ export function RecruiterJobsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-[#0B1020] mb-1">
-                  Eligibility Criteria
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. B.Tech Computer Engineering / IT, CGPA >= 7.50"
-                  value={formData.eligibility}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      eligibility: e.target.value,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs text-[#0B1020] focus:border-[#5146E5] focus:outline-none"
-                />
+                <label className="block font-semibold text-[#0B1020] mb-1">Eligibility Criteria</label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input type="number" min="0" max="10" step="0.01" placeholder="Minimum CGPA (optional)" aria-label="Minimum CGPA" value={formData.minCgpa} onChange={(e) => setFormData((prev) => ({ ...prev, minCgpa: e.target.value }))} className="rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs" />
+                  <input type="number" min="0" step="1" placeholder="Maximum backlogs (optional)" aria-label="Maximum backlogs" value={formData.maxBacklogs} onChange={(e) => setFormData((prev) => ({ ...prev, maxBacklogs: e.target.value }))} className="rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs" />
+                  <input type="text" placeholder="Allowed branches, comma separated" aria-label="Allowed branches" value={formData.allowedBranches} onChange={(e) => setFormData((prev) => ({ ...prev, allowedBranches: e.target.value }))} className="rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs" />
+                  <input type="text" placeholder="Graduation years, comma separated" aria-label="Graduation years" value={formData.graduationYears} onChange={(e) => setFormData((prev) => ({ ...prev, graduationYears: e.target.value }))} className="rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs" />
+                </div>
               </div>
 
               <div className="sm:col-span-2">
@@ -721,9 +719,9 @@ export function RecruiterJobsPage() {
                   }
                   className="w-full rounded-xl border border-[#E4E7EF] bg-white p-2.5 text-xs text-[#0B1020] focus:border-[#5146E5] focus:outline-none"
                 >
-                  <option value="Open">Open</option>
-                  <option value="Closing soon">Closing soon</option>
-                  <option value="Draft">Draft</option>
+                  <option value="OPEN">Open</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="CLOSED">Closed</option>
                 </select>
               </div>
             </div>

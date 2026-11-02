@@ -19,7 +19,6 @@ const studentProfileSchema = new mongoose.Schema(
       type: String,
       required: [true, "Branch is required"],
       trim: true,
-      default: "Computer Engineering",
     },
     cgpa: {
       type: Number,

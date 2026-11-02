@@ -1,10 +1,9 @@
 import { Company } from "../models/Company.js";
-import { resolveRecruiterCompany } from "../services/jobService.js";
 
 export const companyController = {
   async getMyCompany(req, res, next) {
     try {
-      const company = await resolveRecruiterCompany(req.user._id);
+      const company = await Company.findOne({ createdBy: req.user._id });
       return res.status(200).json({
         success: true,
         data: company,
@@ -16,10 +15,15 @@ export const companyController = {
 
   async updateMyCompany(req, res, next) {
     try {
-      const { name, website, industry, location, description } = req.body;
+      const { name, website, industry, location, description, tagline, headquarters } = req.body;
       let company = await Company.findOne({ createdBy: req.user._id });
       if (!company) {
-        company = await resolveRecruiterCompany(req.user._id);
+        if (!name?.trim()) {
+          const error = new Error("Company name is required to create a company profile.");
+          error.statusCode = 400;
+          throw error;
+        }
+        company = new Company({ name: name.trim(), createdBy: req.user._id });
       }
 
       if (name) company.name = name.trim();
@@ -27,6 +31,8 @@ export const companyController = {
       if (industry !== undefined) company.industry = industry.trim();
       if (location !== undefined) company.location = location.trim();
       if (description !== undefined) company.description = description.trim();
+      if (tagline !== undefined) company.tagline = tagline.trim();
+      if (headquarters !== undefined) company.headquarters = headquarters.trim();
 
       await company.save();
 

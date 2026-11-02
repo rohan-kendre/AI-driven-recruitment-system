@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { initialCompanyProfile } from "../data/recruiterJobsData.js";
 import { companyApi } from "../services/companyApi.js";
 
+const emptyCompanyProfile = {
+  name: "", legalName: "", tagline: "", location: "", headquarters: "",
+  description: "", industry: "", founded: "", teamSize: "",
+  campusPartner: "", campusTPOStatus: "", liaison: "", website: "",
+};
+
 export function RecruiterCompanyPage() {
-  const [profile, setProfile] = useState(initialCompanyProfile);
+  const [profile, setProfile] = useState(emptyCompanyProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState(null);
 
@@ -31,6 +36,8 @@ export function RecruiterCompanyPage() {
           industry: data.industry || prev.industry,
           location: data.location || prev.location,
           description: data.description || prev.description,
+          tagline: data.tagline || prev.tagline,
+          headquarters: data.headquarters || prev.headquarters,
         }));
       })
       .catch(() => {});
@@ -140,7 +147,7 @@ export function RecruiterCompanyPage() {
                 >
                   {profile.name}
                 </h2>
-                <Badge tone="emerald">Verified Partner</Badge>
+                {profile.name && <Badge tone="emerald">Company profile</Badge>}
               </div>
               <p className="text-sm font-semibold text-[#5146E5]">
                 {profile.tagline}

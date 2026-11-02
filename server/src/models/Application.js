@@ -60,7 +60,7 @@ const applicationSchema = new mongoose.Schema(
     },
     resumeVersion: {
       type: String,
-      default: "Active resume",
+      default: "",
     },
     notes: {
       type: String,

@@ -49,6 +49,10 @@ export async function protect(request, response, next) {
       })
     }
 
+    if (user.approvalStatus !== 'APPROVED') {
+      return response.status(403).json({ success: false, message: 'Your account is not approved.' })
+    }
+
     request.user = user
     next()
   } catch (error) {

@@ -30,7 +30,6 @@ const interviewSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      default: "Technical Interview Round 1",
     },
     date: {
       type: String,
@@ -38,20 +37,20 @@ const interviewSchema = new mongoose.Schema(
     },
     time: {
       type: String,
-      default: "10:00 AM",
+      default: "",
     },
     mode: {
       type: String,
       enum: ["Virtual", "On Campus", "In Person", "VIRTUAL", "ON_CAMPUS", "IN_PERSON"],
-      default: "Virtual",
+      required: true,
     },
     location: {
       type: String,
-      default: "NexHire virtual meeting room",
+      default: "",
     },
     meetingLink: {
       type: String,
-      default: "https://meet.google.com/nex-hire-interview",
+      default: "",
     },
     status: {
       type: String,

@@ -13,15 +13,17 @@ const companySchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    tagline: { type: String, trim: true, default: "" },
+    headquarters: { type: String, trim: true, default: "" },
     industry: {
       type: String,
       trim: true,
-      default: "Technology",
+      default: "",
     },
     location: {
       type: String,
       trim: true,
-      default: "Mumbai",
+      default: "",
     },
     description: {
       type: String,

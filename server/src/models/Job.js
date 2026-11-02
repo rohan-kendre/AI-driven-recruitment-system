@@ -28,36 +28,36 @@ const jobSchema = new mongoose.Schema(
     location: {
       type: String,
       trim: true,
-      default: "Mumbai",
+      default: "",
     },
     workMode: {
       type: String,
       enum: ["ONSITE", "HYBRID", "REMOTE"],
-      default: "HYBRID",
+      required: true,
     },
     employmentType: {
       type: String,
-      default: "Full-time",
+      default: "",
     },
     domain: {
       type: String,
       trim: true,
-      default: "Software Engineering",
+      default: "",
     },
     ctc: {
       type: String,
       trim: true,
-      default: "18.5 LPA CTC",
+      default: "",
     },
     stipend: {
       type: String,
       trim: true,
-      default: "₹45,000 / month",
+      default: "",
     },
     duration: {
       type: String,
       trim: true,
-      default: "6 Months",
+      default: "",
     },
     deadline: {
       type: Date,
@@ -95,14 +95,11 @@ const jobSchema = new mongoose.Schema(
     },
     selectionRounds: {
       type: [String],
-      default: ["Technical Screening", "Technical Interview", "HR Fitment"],
+      default: [],
     },
     responsibilities: {
       type: [String],
-      default: [
-        "Design and build scalable campus recruitment software systems.",
-        "Collaborate with multi-functional teams on real-world engineering tasks.",
-      ],
+      default: [],
     },
     status: {
       type: String,

@@ -34,19 +34,19 @@ const offerSchema = new mongoose.Schema(
     },
     ctc: {
       type: String,
-      default: "18.5 LPA CTC",
+      default: "",
     },
     stipend: {
       type: String,
-      default: "₹45,000 / month",
+      default: "",
     },
     joiningDate: {
       type: String,
-      default: "2026-07-01",
+      default: "",
     },
     deadline: {
       type: String,
-      default: "2026-06-15",
+      default: "",
     },
     status: {
       type: String,

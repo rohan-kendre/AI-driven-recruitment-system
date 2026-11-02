@@ -113,6 +113,15 @@ export async function login(request, response, next) {
       })
     }
 
+    if (user.approvalStatus !== 'APPROVED') {
+      return response.status(403).json({
+        success: false,
+        message: user.approvalStatus === 'PENDING'
+          ? 'Your account is pending institutional approval.'
+          : 'Your account registration was not approved.',
+      })
+    }
+
     const accessToken = generateAccessToken(user)
     const refreshToken = generateRefreshToken(user)
 
@@ -152,7 +161,7 @@ export async function refresh(request, response, next) {
     }
 
     const user = await User.findById(decoded.id)
-    if (!user || user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
+    if (!user || user.status !== 'ACTIVE' || user.approvalStatus !== 'APPROVED') {
       clearRefreshTokenCookie(response)
       return response.status(401).json({
         success: false,

@@ -5,23 +5,12 @@ export const studentController = {
   async getProfile(req, res, next) {
     try {
       const user = await User.findById(req.user._id).select("name email role");
-      let profile = await StudentProfile.findOne({ userId: req.user._id });
-      if (!profile) {
-        // Create initial default profile if not exists
-        profile = await StudentProfile.create({
-          userId: req.user._id,
-          branch: "Computer Engineering",
-          cgpa: 8.5,
-          backlogs: 0,
-          graduationYear: 2028,
-          skills: ["React", "JavaScript", "Python"],
-        });
-      }
+      const profile = await StudentProfile.findOne({ userId: req.user._id });
 
       return res.status(200).json({
         success: true,
         data: {
-          ...profile.toJSON(),
+          ...(profile ? profile.toJSON() : {}),
           name: user.name,
           email: user.email,
         },
@@ -61,6 +50,12 @@ export const studentController = {
       }
       if (bio !== undefined) profile.bio = bio;
       if (phone !== undefined) profile.phone = phone;
+
+      if (!profile.branch || profile.cgpa === undefined || !profile.graduationYear) {
+        const error = new Error("Branch, CGPA, and graduation year are required to complete your profile.");
+        error.statusCode = 400;
+        throw error;
+      }
 
       await profile.save();
 

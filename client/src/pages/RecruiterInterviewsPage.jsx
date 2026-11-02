@@ -4,6 +4,7 @@ import { interviewsApi } from "../services/interviewsApi.js";
 
 const STATUS_FILTERS = ["All", "Upcoming", "Completed"];
 const MODE_FILTERS = ["All Modes", "Virtual", "On campus"];
+const isUpcoming = (item) => ["SCHEDULED", "RESCHEDULED"].includes(item.status);
 
 export function RecruiterInterviewsPage() {
   const [interviews, setInterviews] = useState([]);
@@ -41,8 +42,8 @@ export function RecruiterInterviewsPage() {
   // Filtered interviews list
   const filteredInterviews = useMemo(() => {
     return interviews.filter((item) => {
-      if (selectedStatus === "Upcoming" && item.status !== "Upcoming") return false;
-      if (selectedStatus === "Completed" && item.status !== "Completed") return false;
+      if (selectedStatus === "Upcoming" && !isUpcoming(item)) return false;
+      if (selectedStatus === "Completed" && item.status !== "COMPLETED") return false;
       if (selectedMode !== "All Modes" && item.mode.toLowerCase() !== selectedMode.toLowerCase()) return false;
       return true;
     });
@@ -52,8 +53,8 @@ export function RecruiterInterviewsPage() {
   const statusCounts = useMemo(() => {
     return {
       All: interviews.length,
-      Upcoming: interviews.filter((i) => i.status === "Upcoming").length,
-      Completed: interviews.filter((i) => i.status === "Completed").length,
+      Upcoming: interviews.filter(isUpcoming).length,
+      Completed: interviews.filter((i) => i.status === "COMPLETED").length,
     };
   }, [interviews]);
 
@@ -273,7 +274,7 @@ export function RecruiterInterviewsPage() {
                       <span className="text-xs font-semibold text-[#56627A]">
                         {interview.role}
                       </span>
-                      {interview.status === "Completed" && (
+                      {interview.status === "COMPLETED" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-[#F0FDF4] border border-[#16886A]/20 px-2 py-0.5 text-[10px] font-semibold text-[#16886A]">
                           Completed
                         </span>
@@ -336,7 +337,7 @@ export function RecruiterInterviewsPage() {
                 <span className="text-xs text-[#8F9CAE]">·</span>
                 <span
                   className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    selectedInterview.status === "Completed"
+                    selectedInterview.status === "COMPLETED"
                       ? "bg-[#F0FDF4] text-[#16886A] border border-[#16886A]/20"
                       : "bg-[#5146E5]/10 text-[#5146E5] border border-[#5146E5]/20"
                   }`}
@@ -414,45 +415,8 @@ export function RecruiterInterviewsPage() {
                 </p>
               </div>
 
-              {/* Simple Recruitment Timeline */}
-              <div className="rounded-xl border border-[#E4E7EF] p-4 space-y-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">
-                  Recruitment Timeline
-                </p>
-                <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E4E7EF]">
-                  {["Applied", "Screening", "Shortlisted", "Interview"].map((step, idx) => {
-                    const isReached = true;
-                    const isCurrent = step === "Interview";
-                    return (
-                      <div key={step} className="relative flex items-start gap-4 pl-8">
-                        <div
-                          className={`absolute left-1.5 top-1 h-3.5 w-3.5 rounded-full border-2 bg-white ${
-                            isCurrent
-                              ? "border-[#5146E5] ring-2 ring-[#5146E5]/20"
-                              : isReached
-                                ? "border-[#16886A] bg-[#16886A]"
-                                : "border-[#E4E7EF]"
-                          }`}
-                        />
-                        <div className="space-y-0.5">
-                          <p
-                            className={`text-xs font-semibold ${
-                              isCurrent ? "text-[#5146E5]" : "text-[#0B1020]"
-                            }`}
-                          >
-                            {step}
-                          </p>
-                          <p className="text-[11px] text-[#8F9CAE]">
-                            {idx === 0 && "18 Aug 2026 · Institutional drive application"}
-                            {idx === 1 && "20 Aug 2026 · Evaluation round cleared"}
-                            {idx === 2 && "22 Aug 2026 · Advanced by recruiter"}
-                            {idx === 3 && `${selectedInterview.date} · Scheduled round`}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="rounded-xl border border-[#E4E7EF] p-4 text-xs text-[#56627A]">
+                {selectedInterview.date} · {selectedInterview.time} · {selectedInterview.status}
               </div>
             </div>
 
@@ -466,7 +430,7 @@ export function RecruiterInterviewsPage() {
               </Link>
 
               <div className="flex items-center gap-2">
-                {selectedInterview.status === "Upcoming" && (
+                {isUpcoming(selectedInterview) && (
                   <>
                     <button
                       type="button"
@@ -477,7 +441,7 @@ export function RecruiterInterviewsPage() {
                           candidateName: selectedInterview.candidateName,
                           date: selectedInterview.date,
                           time: selectedInterview.time,
-                          location: selectedInterview.locationDetails,
+                          location: selectedInterview.location,
                           workMode: selectedInterview.mode,
                         })
                       }
@@ -495,7 +459,7 @@ export function RecruiterInterviewsPage() {
                     </button>
                   </>
                 )}
-                {selectedInterview.status === "Completed" && (
+                {selectedInterview.status === "COMPLETED" && (
                   <span className="text-xs font-semibold text-[#16886A]">
                     ✓ Round completed
                   </span>
@@ -524,7 +488,7 @@ export function RecruiterInterviewsPage() {
                 {rescheduleModal.candidateName}
               </h3>
               <p className="mt-1 text-xs text-[#56627A]">
-                Update evaluation session timing. Changes are saved to MockAPI.
+                Update evaluation session timing.
               </p>
             </div>
 
@@ -585,7 +549,7 @@ export function RecruiterInterviewsPage() {
                 >
                   <option value="Virtual">Virtual</option>
                   <option value="On campus">On campus</option>
-                  <option value="Hybrid">Hybrid</option>
+                  <option value="In Person">In Person</option>
                 </select>
               </div>
 

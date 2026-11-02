@@ -25,15 +25,15 @@ export const interviewController = {
             applicationId: item.applicationId.toString(),
             title: item.title,
             round: item.title,
-            role: job.title || "Software Engineer",
-            company: company.name || "Acme Technologies",
+            role: job.title || "Position unavailable",
+            company: company.name || "Company unavailable",
             date: item.date,
             time: item.time,
             mode: item.mode,
             location: item.location,
             meetingLink: item.meetingLink,
             status: item.status,
-            panel: "Technical Hiring Team",
+            panel: item.panel || "",
           };
         });
 
@@ -55,7 +55,7 @@ export const interviewController = {
             applicationId: item.applicationId.toString(),
             candidateName: student.name || "Student",
             candidateEmail: student.email || "",
-            role: job.title || "Software Engineer",
+            role: job.title || "Position unavailable",
             title: item.title,
             round: item.title,
             date: item.date,
@@ -98,6 +98,12 @@ export const interviewController = {
         throw error;
       }
 
+      if (!title?.trim() || !date || !time || !mode) {
+        const error = new Error("Interview title, date, time, and mode are required.");
+        error.statusCode = 400;
+        throw error;
+      }
+
       const application = await Application.findById(applicationId).populate("jobId");
       if (!application) {
         const error = new Error("Application not found");
@@ -116,12 +122,12 @@ export const interviewController = {
         jobId: application.jobId._id,
         studentId: application.studentId,
         recruiterId: req.user._id,
-        title: title || "Technical Interview Round 1",
-        date: date || new Date().toISOString().slice(0, 10),
-        time: time || "10:00 AM",
-        mode: mode || "Virtual",
-        location: location || "NexHire virtual meeting room",
-        meetingLink: meetingLink || "https://meet.google.com/nex-hire-interview",
+        title: title.trim(),
+        date,
+        time,
+        mode,
+        location: location || "",
+        meetingLink: meetingLink || "",
         status: "SCHEDULED",
         notes: notes || "",
       });

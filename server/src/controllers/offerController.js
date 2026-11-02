@@ -23,12 +23,12 @@ export const offerController = {
             id: item._id.toString(),
             _id: item._id.toString(),
             applicationId: item.applicationId.toString(),
-            role: job.title || "Software Engineer",
-            company: company.name || "Acme Technologies",
-            compensation: item.ctc || job.ctc || "18.5 LPA CTC",
-            stipend: item.stipend || job.stipend || "₹45,000 / month",
-            duration: job.duration || "6 Months",
-            location: job.location || "Mumbai",
+            role: job.title || "Position unavailable",
+            company: company.name || "Company unavailable",
+            compensation: item.ctc || job.ctc || "",
+            stipend: item.stipend || job.stipend || "",
+            duration: job.duration || "",
+            location: job.location || "",
             joiningDate: item.joiningDate,
             deadline: item.deadline,
             status: item.status, // "PENDING", "ACCEPTED", "DECLINED"
@@ -53,7 +53,7 @@ export const offerController = {
             applicationId: item.applicationId.toString(),
             candidateName: student.name || "Student",
             candidateEmail: student.email || "",
-            role: job.title || "Software Engineer",
+            role: job.title || "Position unavailable",
             compensation: item.ctc,
             stipend: item.stipend,
             joiningDate: item.joiningDate,
@@ -89,6 +89,12 @@ export const offerController = {
         throw error;
       }
 
+      if (!ctc?.trim() || !joiningDate?.trim() || !deadline?.trim()) {
+        const error = new Error("CTC, joining date, and decision deadline are required.");
+        error.statusCode = 400;
+        throw error;
+      }
+
       const application = await Application.findById(applicationId).populate("jobId");
       if (!application) {
         const error = new Error("Application not found");
@@ -115,10 +121,10 @@ export const offerController = {
         studentId: application.studentId,
         recruiterId: req.user._id,
         companyId: application.jobId.companyId,
-        ctc: ctc || application.jobId.ctc || "18.5 LPA CTC",
-        stipend: stipend || application.jobId.stipend || "₹45,000 / month",
-        joiningDate: joiningDate || "2026-07-01",
-        deadline: deadline || "2026-06-15",
+        ctc: ctc.trim(),
+        stipend: stipend?.trim() || "",
+        joiningDate: joiningDate.trim(),
+        deadline: deadline.trim(),
         status: "PENDING",
       });
 
