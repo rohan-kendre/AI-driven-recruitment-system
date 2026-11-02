@@ -48,11 +48,15 @@ const jobSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+      maxlength: 100,
+      validate: { validator: (value) => !/^\s*-/.test(value || ""), message: "CTC cannot be negative" },
     },
     stipend: {
       type: String,
       trim: true,
       default: "",
+      maxlength: 100,
+      validate: { validator: (value) => !/^\s*-/.test(value || ""), message: "Stipend cannot be negative" },
     },
     duration: {
       type: String,

@@ -12,9 +12,18 @@ const companySchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+      maxlength: 255,
+      validate: {
+        validator(value) {
+          if (!value) return true;
+          try { const url = new URL(value); return ["https:", "http:"].includes(url.protocol) && Boolean(url.hostname); }
+          catch { return false; }
+        },
+        message: "Company website must be a valid HTTP or HTTPS URL",
+      },
     },
-    tagline: { type: String, trim: true, default: "" },
-    headquarters: { type: String, trim: true, default: "" },
+    tagline: { type: String, trim: true, default: "", maxlength: 200 },
+    headquarters: { type: String, trim: true, default: "", maxlength: 200 },
     industry: {
       type: String,
       trim: true,
@@ -29,6 +38,7 @@ const companySchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+      maxlength: 5000,
     },
     status: {
       type: String,

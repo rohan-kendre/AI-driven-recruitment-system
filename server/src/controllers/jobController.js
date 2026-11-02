@@ -32,6 +32,12 @@ export const jobController = {
   async getJobById(req, res, next) {
     try {
       const job = await jobService.getJobById(req.params.id);
+      if (req.user.role === "STUDENT" && (job.status !== "OPEN" || new Date(job.deadline) < new Date())) {
+        return res.status(404).json({ success: false, message: "Job not found" });
+      }
+      if (req.user.role === "RECRUITER" && job.recruiterId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, message: "Forbidden" });
+      }
       return res.status(200).json({ success: true, data: job });
     } catch (err) {
       next(err);

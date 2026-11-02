@@ -141,6 +141,7 @@ export function LoginPage() {
   // Static product fragment for Login
   const loginPreview = (
     <div className="rounded-2xl border border-[#E4E7EF] bg-white p-5 shadow-subtle space-y-4">
+      <p className="text-[11px] font-semibold text-[#56627A]">Illustrative preview · sample records</p>
       <div className="flex items-center justify-between border-b border-[#E4E7EF]/80 pb-3">
         <div className="flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#5146E5] text-xs font-bold text-white">

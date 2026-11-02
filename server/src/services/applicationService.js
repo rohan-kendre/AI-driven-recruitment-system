@@ -135,6 +135,12 @@ export const applicationService = {
       ],
       appliedAt: now,
       notes,
+      eligibilitySnapshot: {
+        branch: profile.branch,
+        cgpa: profile.cgpa,
+        backlogs: profile.backlogs,
+        graduationYear: profile.graduationYear,
+      },
     });
 
     return application;
@@ -191,7 +197,8 @@ export const applicationService = {
         appliedOn: formatDate(app.appliedAt || app.createdAt),
         nextAction,
         timeline,
-        resumeVersion: app.resumeVersion || "Active resume",
+        resumeVersion: app.resumeVersion || null,
+        eligibilitySnapshot: app.eligibilitySnapshot?.cgpa == null ? null : app.eligibilitySnapshot,
       };
     });
   },
@@ -233,14 +240,13 @@ export const applicationService = {
         email: student.email || "",
         role: job.title || "Job position",
         cgpa: profile.cgpa ?? "—",
+        backlogs: app.eligibilitySnapshot?.backlogs ?? profile.backlogs,
         branch: profile.branch || "",
         skills: profile.skills || [],
         stage,
         status: app.status,
         appliedDate: formatDate(app.appliedAt || app.createdAt),
-        profileAlignment: null,
-        eligibility: { status: "Not evaluated" },
-        resume: "Active verified student profile",
+        eligibility: { status: "Eligible" },
         timeline: timeline.length > 0 ? timeline : [
           { stage: "Applied", date: formatDate(app.createdAt), note: "Application submitted" }
         ],

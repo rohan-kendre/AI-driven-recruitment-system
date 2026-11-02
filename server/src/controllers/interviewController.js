@@ -1,7 +1,33 @@
 import mongoose from "mongoose";
 import { Interview } from "../models/Interview.js";
 import { Application } from "../models/Application.js";
-import { ALLOWED_STATUS_TRANSITIONS } from "../constants/applicationStatuses.js";
+
+const VALID_MODES = ["Virtual", "On Campus", "In Person"];
+function validateSchedule({ date, time, mode, location, meetingLink }) {
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/.test(date)) {
+    const error = new Error("Choose a valid future interview date and time.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const when = new Date(date);
+  if (!date || Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
+    const error = new Error("Choose a valid future interview date and time.");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time || "") || !VALID_MODES.includes(mode)) {
+    const error = new Error("A valid time and interview mode are required.");
+    error.statusCode = 400;
+    throw error;
+  }
+  let meetingUrl;
+  try { meetingUrl = new URL(meetingLink); } catch { meetingUrl = null; }
+  if (mode === "Virtual" ? meetingUrl?.protocol !== "https:" || !meetingUrl.hostname : !location?.trim()) {
+    const error = new Error(mode === "Virtual" ? "An HTTPS meeting link is required." : "An interview location is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+}
 
 export const interviewController = {
   async getInterviews(req, res, next) {
@@ -34,6 +60,7 @@ export const interviewController = {
             meetingLink: item.meetingLink,
             status: item.status,
             panel: item.panel || "",
+            notes: item.notes || "",
           };
         });
 
@@ -98,11 +125,12 @@ export const interviewController = {
         throw error;
       }
 
-      if (!title?.trim() || !date || !time || !mode) {
+      if (!title?.trim() || title.length > 120 || !date || !time || !mode) {
         const error = new Error("Interview title, date, time, and mode are required.");
         error.statusCode = 400;
         throw error;
       }
+      validateSchedule({ date, time, mode, location, meetingLink });
 
       const application = await Application.findById(applicationId).populate("jobId");
       if (!application) {
@@ -117,35 +145,37 @@ export const interviewController = {
         throw error;
       }
 
-      const interview = await Interview.create({
-        applicationId: application._id,
-        jobId: application.jobId._id,
-        studentId: application.studentId,
-        recruiterId: req.user._id,
-        title: title.trim(),
-        date,
-        time,
-        mode,
-        location: location || "",
-        meetingLink: meetingLink || "",
-        status: "SCHEDULED",
-        notes: notes || "",
-      });
+      if (!["SHORTLISTED", "INTERVIEW"].includes(application.status)) {
+        const error = new Error("Only shortlisted or interviewing candidates can be scheduled.");
+        error.statusCode = 400;
+        throw error;
+      }
 
-      // Phase 5 integration: Update Application status to INTERVIEW if valid transition
-      const currentStatus = application.status;
-      if (currentStatus !== "INTERVIEW") {
-        const allowed = ALLOWED_STATUS_TRANSITIONS[currentStatus] || [];
-        if (allowed.includes("INTERVIEW") || currentStatus === "APPLIED" || currentStatus === "SCREENING" || currentStatus === "SHORTLISTED") {
-          application.status = "INTERVIEW";
-          application.statusHistory.push({
-            status: "INTERVIEW",
-            changedAt: new Date(),
-            changedBy: req.user._id,
-            note: `Interview scheduled: ${interview.title}`,
-          });
-          await application.save();
-        }
+      const session = await mongoose.startSession();
+      let interview;
+      try {
+        await session.withTransaction(async () => {
+          const current = await Application.findById(applicationId).session(session);
+          if (!["SHORTLISTED", "INTERVIEW"].includes(current?.status)) {
+            const error = new Error("Application is no longer eligible for scheduling.");
+            error.statusCode = 409;
+            throw error;
+          }
+          [interview] = await Interview.create([{
+            applicationId: current._id, jobId: application.jobId._id,
+            studentId: current.studentId, recruiterId: req.user._id,
+            title: title.trim(), date, time, mode,
+            location: location || "", meetingLink: meetingLink || "",
+            status: "SCHEDULED", notes: notes || "",
+          }], { session });
+          if (current.status === "SHORTLISTED") {
+            current.status = "INTERVIEW";
+            current.statusHistory.push({ status: "INTERVIEW", changedAt: new Date(), changedBy: req.user._id, note: `Interview scheduled: ${interview.title}` });
+            await current.save({ session });
+          }
+        });
+      } finally {
+        await session.endSession();
       }
 
       return res.status(201).json({
@@ -160,6 +190,11 @@ export const interviewController = {
 
   async updateInterview(req, res, next) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        const error = new Error("Invalid interview ID format");
+        error.statusCode = 400;
+        throw error;
+      }
       const interview = await Interview.findById(req.params.id);
       if (!interview) {
         const error = new Error("Interview not found");
@@ -173,17 +208,24 @@ export const interviewController = {
         throw error;
       }
 
-      const { status, date, time, location, mode } = req.body;
+      const { status, date, time, location, mode, meetingLink, notes } = req.body;
       if (status) {
-        const s = status.toUpperCase();
-        if (["SCHEDULED", "RESCHEDULED", "COMPLETED", "CANCELLED"].includes(s)) {
-          interview.status = s;
+        const s = String(status).toUpperCase();
+        const allowed = { SCHEDULED: ["RESCHEDULED", "COMPLETED", "CANCELLED"], RESCHEDULED: ["RESCHEDULED", "COMPLETED", "CANCELLED"], COMPLETED: [], CANCELLED: [] };
+        if (!allowed[interview.status]?.includes(s)) {
+          const error = new Error("Invalid interview status transition.");
+          error.statusCode = 400;
+          throw error;
         }
+        interview.status = s;
       }
+      if (date || time || mode || location || meetingLink) validateSchedule({ date: date || interview.date, time: time || interview.time, mode: mode || interview.mode, location: location || interview.location, meetingLink: meetingLink || interview.meetingLink });
       if (date) interview.date = date;
       if (time) interview.time = time;
       if (location) interview.location = location;
       if (mode) interview.mode = mode;
+      if (meetingLink) interview.meetingLink = meetingLink;
+      if (notes !== undefined) interview.notes = String(notes).slice(0, 2000);
 
       await interview.save();
 

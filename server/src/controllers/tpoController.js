@@ -17,6 +17,7 @@ export const tpoController = {
         interviewCount,
         offersCount,
         acceptedOffers,
+        placedStudentIds,
       ] = await Promise.all([
         User.countDocuments({ role: "STUDENT" }),
         User.countDocuments({ role: "RECRUITER" }),
@@ -27,11 +28,14 @@ export const tpoController = {
         Interview.countDocuments(),
         Offer.countDocuments(),
         Offer.countDocuments({ status: "ACCEPTED" }),
+        Offer.distinct("studentId", { status: "ACCEPTED" }),
       ]);
 
+      // Placement rate counts distinct students with an accepted offer, over all registered students.
+      const placedStudents = placedStudentIds.length;
       const placementRate =
         totalStudents > 0
-          ? Math.min(100, Math.round((acceptedOffers / totalStudents) * 100))
+          ? Math.min(100, Math.round((placedStudents / totalStudents) * 100))
           : 0;
 
       return res.status(200).json({
@@ -46,6 +50,7 @@ export const tpoController = {
           interviewCount,
           offersCount,
           acceptedOffers,
+          placedStudents,
           placementRate,
           averagePackage: null,
           highestPackage: null,

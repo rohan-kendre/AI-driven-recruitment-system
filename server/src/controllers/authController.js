@@ -1,4 +1,5 @@
 import { User } from '../models/User.js'
+import { consumeRefreshSession, revokeRefreshSession, saveRefreshSession } from '../services/refreshSessionService.js'
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -124,6 +125,7 @@ export async function login(request, response, next) {
 
     const accessToken = generateAccessToken(user)
     const refreshToken = generateRefreshToken(user)
+    await saveRefreshSession(user._id, refreshToken)
 
     setRefreshTokenCookie(response, refreshToken)
 
@@ -160,6 +162,12 @@ export async function refresh(request, response, next) {
       })
     }
 
+    const activeSession = await consumeRefreshSession(decoded.id, refreshToken)
+    if (!activeSession) {
+      clearRefreshTokenCookie(response)
+      return response.status(401).json({ success: false, message: 'Refresh session is no longer active. Please sign in.' })
+    }
+
     const user = await User.findById(decoded.id)
     if (!user || user.status !== 'ACTIVE' || user.approvalStatus !== 'APPROVED') {
       clearRefreshTokenCookie(response)
@@ -171,6 +179,7 @@ export async function refresh(request, response, next) {
 
     const newAccessToken = generateAccessToken(user)
     const newRefreshToken = generateRefreshToken(user)
+    await saveRefreshSession(user._id, newRefreshToken)
     setRefreshTokenCookie(response, newRefreshToken)
 
     return response.status(200).json({
@@ -183,7 +192,12 @@ export async function refresh(request, response, next) {
   }
 }
 
-export function logout(_request, response) {
+export async function logout(request, response, next) {
+  try {
+    await revokeRefreshSession(request.cookies?.[REFRESH_COOKIE_NAME])
+  } catch (error) {
+    return next(error)
+  }
   clearRefreshTokenCookie(response)
   return response.status(200).json({
     success: true,

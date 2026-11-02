@@ -76,4 +76,7 @@ const interviewSchema = new mongoose.Schema(
   }
 );
 
+// Reschedule an existing round instead of creating the same round twice.
+interviewSchema.index({ applicationId: 1, title: 1 }, { unique: true });
+
 export const Interview = mongoose.model("Interview", interviewSchema);

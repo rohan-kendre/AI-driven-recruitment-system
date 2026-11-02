@@ -1,4 +1,5 @@
 import { User } from "../models/User.js";
+import mongoose from "mongoose";
 
 export const adminController = {
   async getUsers(req, res, next) {
@@ -20,6 +21,7 @@ export const adminController = {
   async updateUserStatus(req, res, next) {
     try {
       const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid user ID" });
       const { status } = req.body;
 
       if (!["ACTIVE", "INACTIVE", "SUSPENDED"].includes(status)) {
@@ -58,6 +60,7 @@ export const adminController = {
   async updateUserApproval(req, res, next) {
     try {
       const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: "Invalid user ID" });
       const { approvalStatus } = req.body;
 
       if (!["APPROVED", "PENDING", "REJECTED"].includes(approvalStatus)) {
@@ -71,6 +74,10 @@ export const adminController = {
         const error = new Error("User not found");
         error.statusCode = 404;
         throw error;
+      }
+
+      if (id === req.user._id.toString() || user.role !== "RECRUITER") {
+        return res.status(403).json({ success: false, message: "Only other recruiter accounts can be approved or rejected." });
       }
 
       user.approvalStatus = approvalStatus;

@@ -8,7 +8,16 @@ export function errorMiddleware(error, _request, response, _next) {
   let statusCode = error.statusCode || 500
   let message = error.message || 'An unexpected error occurred'
 
+  if (error.name === 'MulterError') {
+    statusCode = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400
+    message = error.code === 'LIMIT_FILE_SIZE' ? 'Resume must be 5 MB or smaller.' : 'Invalid resume upload.'
+  }
+
   // Mongoose validation error
+  if (error.name === 'CastError') {
+    statusCode = 400
+    message = 'Invalid resource ID or field value.'
+  }
   if (error.name === 'ValidationError') {
     statusCode = 400
     message = Object.values(error.errors || {})

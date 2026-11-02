@@ -201,6 +201,7 @@ export function LandingPage() {
           </div>
 
           {/* Product Surface */}
+          <p className="px-3 pt-2 text-[11px] font-semibold text-[#56627A]">Illustrative preview · sample records shown for design only</p>
           <div className="bg-[#F7F8FC] rounded-xl p-4 sm:p-6 mt-2 space-y-5">
             {/* Workspace Context Strip */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E4E7EF] pb-4">

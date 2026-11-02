@@ -43,7 +43,7 @@ export function evaluateEligibility(job, profile) {
   // 3. Allowed Branches
   if (Array.isArray(criteria.allowedBranches) && criteria.allowedBranches.length > 0) {
     const studentBranch = (profile.branch || "").trim().toLowerCase();
-    const branchMatched = criteria.allowedBranches.some((b) =>
+    const branchMatched = Boolean(studentBranch) && criteria.allowedBranches.some((b) =>
       studentBranch.includes(b.trim().toLowerCase()) ||
       b.trim().toLowerCase().includes(studentBranch)
     );
@@ -122,7 +122,7 @@ export const jobService = {
     const userApplications = await Application.find({ studentId: studentUserId }).select("jobId");
     const appliedJobIds = new Set(userApplications.map((a) => a.jobId.toString()));
 
-    const jobs = await Job.find({ status: "OPEN" })
+    const jobs = await Job.find({ status: "OPEN", deadline: { $gte: new Date() } })
       .populate("companyId", "name location industry website")
       .sort({ createdAt: -1 });
 
@@ -323,6 +323,11 @@ export const jobService = {
       error.statusCode = 400;
       throw error;
     }
+    if (deadline.getTime() <= Date.now()) {
+      const error = new Error("Application deadline must be in the future.");
+      error.statusCode = 400;
+      throw error;
+    }
 
     if (!data.description?.trim() || !data.location?.trim()) {
       const error = new Error("Job description and location are required.");
@@ -401,7 +406,12 @@ export const jobService = {
     }
     if (data.deadline) {
       const d = new Date(data.deadline);
-      if (!Number.isNaN(d.getTime())) job.deadline = d;
+      if (Number.isNaN(d.getTime()) || d.getTime() <= Date.now()) {
+        const error = new Error("Application deadline must be a future date.");
+        error.statusCode = 400;
+        throw error;
+      }
+      job.deadline = d;
     }
     if (data.requiredSkills) {
       job.requiredSkills = typeof data.requiredSkills === "string"
@@ -440,6 +450,11 @@ export const jobService = {
     const clean = (status || "").toUpperCase();
     if (!["OPEN", "CLOSED", "DRAFT"].includes(clean)) {
       const error = new Error("Invalid status. Must be OPEN, CLOSED, or DRAFT");
+      error.statusCode = 400;
+      throw error;
+    }
+    if (clean === "OPEN" && new Date(job.deadline).getTime() <= Date.now()) {
+      const error = new Error("An expired job cannot be opened.");
       error.statusCode = 400;
       throw error;
     }

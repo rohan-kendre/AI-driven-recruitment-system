@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { randomUUID } from 'node:crypto'
 import { env } from '../config/env.js'
 
 export function generateAccessToken(user) {
@@ -10,7 +11,7 @@ export function generateAccessToken(user) {
 
 export function generateRefreshToken(user) {
   const userId = user._id ? user._id.toString() : user.id
-  return jwt.sign({ id: userId, role: user.role }, env.JWT_REFRESH_SECRET, {
+  return jwt.sign({ id: userId, role: user.role, jti: randomUUID() }, env.JWT_REFRESH_SECRET, {
     expiresIn: env.JWT_REFRESH_EXPIRES_IN,
   })
 }

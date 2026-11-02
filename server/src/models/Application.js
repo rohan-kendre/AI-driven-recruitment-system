@@ -62,6 +62,12 @@ const applicationSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    eligibilitySnapshot: {
+      branch: String,
+      cgpa: Number,
+      backlogs: Number,
+      graduationYear: Number,
+    },
     notes: {
       type: String,
       trim: true,

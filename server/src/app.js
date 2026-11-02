@@ -14,6 +14,7 @@ import interviewRouter from './routes/interviewRoutes.js'
 import offerRouter from './routes/offerRoutes.js'
 import tpoRouter from './routes/tpoRoutes.js'
 import adminRouter from './routes/adminRoutes.js'
+import resumeRouter from './routes/resumeRoutes.js'
 
 export const app = express()
 
@@ -32,6 +33,7 @@ app.use('/api/interviews', interviewRouter)
 app.use('/api/offers', offerRouter)
 app.use('/api/tpo', tpoRouter)
 app.use('/api/admin', adminRouter)
+app.use('/api/resumes', resumeRouter)
 
 app.use(notFoundMiddleware)
 app.use(errorMiddleware)

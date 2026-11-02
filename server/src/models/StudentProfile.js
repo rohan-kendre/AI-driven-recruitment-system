@@ -31,6 +31,8 @@ const studentProfileSchema = new mongoose.Schema(
       required: true,
       default: 0,
       min: [0, "Backlogs cannot be negative"],
+      max: [100, "Backlogs cannot exceed 100"],
+      validate: { validator: Number.isInteger, message: "Backlogs must be a whole number" },
     },
     graduationYear: {
       type: Number,
@@ -46,11 +48,13 @@ const studentProfileSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+      maxlength: 2000,
     },
     phone: {
       type: String,
       trim: true,
       default: "",
+      maxlength: 25,
     },
   },
   {

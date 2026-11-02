@@ -1,13 +1,27 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { interviewsApi } from "../services/interviewsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 const STATUS_FILTERS = ["All", "Upcoming", "Completed"];
 const MODE_FILTERS = ["All Modes", "Virtual", "On campus"];
 const isUpcoming = (item) => ["SCHEDULED", "RESCHEDULED"].includes(item.status);
+const localDateValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};
+const displayDate = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
 
 export function RecruiterInterviewsPage() {
   const [interviews, setInterviews] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [schedule, setSchedule] = useState({ applicationId: "", title: "", date: "", time: "", mode: "Virtual", location: "", meetingLink: "", notes: "" });
+  const [minScheduleDate] = useState(() => localDateValue(new Date()));
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -26,8 +40,9 @@ export function RecruiterInterviewsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      const data = await interviewsApi.getInterviews();
+      const [data, candidateData] = await Promise.all([interviewsApi.getInterviews(), applicationsApi.getRecruiterCandidates()]);
       setInterviews(data);
+      setCandidates((candidateData.candidates || []).filter((candidate) => ["SHORTLISTED", "INTERVIEW"].includes(candidate.status)));
     } catch (error) {
       setLoadError(error.response?.data?.message || error.message || "Unable to load interviews. Please try again.");
     } finally {
@@ -72,14 +87,57 @@ export function RecruiterInterviewsPage() {
     }
   };
 
+  const handleCancel = async (interviewId) => {
+    setIsSaving(true);
+    try {
+      await interviewsApi.updateInterview(interviewId, { status: "CANCELLED" });
+      setSelectedInterview(null);
+      await loadInterviews();
+      showToast("Interview cancelled.");
+    } catch (error) {
+      showToast(error.response?.data?.message || error.message || "Unable to cancel the interview.");
+    } finally { setIsSaving(false); }
+  };
+
+  const handleScheduleSubmit = async (event) => {
+    event.preventDefault();
+    const scheduledAt = new Date(`${schedule.date}T${schedule.time}`);
+    if (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) {
+      showToast("Choose a future interview date and time.");
+      return;
+    }
+    if (schedule.mode === "Virtual" && !/^https:\/\//i.test(schedule.meetingLink)) {
+      showToast("A virtual interview requires an HTTPS meeting link.");
+      return;
+    }
+    if (schedule.mode !== "Virtual" && !schedule.location.trim()) {
+      showToast("Enter the interview location.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await interviewsApi.createInterview({ ...schedule, date: scheduledAt.toISOString(), time: schedule.time });
+      setShowSchedule(false);
+      setSchedule({ applicationId: "", title: "", date: "", time: "", mode: "Virtual", location: "", meetingLink: "", notes: "" });
+      await loadInterviews();
+      showToast("Interview scheduled.");
+    } catch (error) {
+      showToast(error.response?.data?.message || "Unable to schedule interview.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleRescheduleSubmit = async (e) => {
     e.preventDefault();
     if (!rescheduleModal) return;
 
-    const { interviewId, date, time, location, workMode } = rescheduleModal;
+    const { interviewId, date, time, location, meetingLink, workMode } = rescheduleModal;
+    const when = new Date(`${date}T${time}`);
+    if (!Number.isFinite(when.getTime()) || when.getTime() <= Date.now()) { showToast("Choose a future date and time."); return; }
     setIsSaving(true);
     try {
-      await interviewsApi.updateInterview(interviewId, { status: "RESCHEDULED", date, time, location, mode: workMode });
+      await interviewsApi.updateInterview(interviewId, { status: "RESCHEDULED", date: when.toISOString(), time, location, meetingLink, mode: workMode });
       setRescheduleModal(null);
       setSelectedInterview(null);
       await loadInterviews();
@@ -138,20 +196,28 @@ export function RecruiterInterviewsPage() {
             Interviews
           </h1>
           <p className="mt-1 text-sm text-[#56627A]">
-            Upcoming evaluation rounds, candidate schedules, and panel allocations.
+            Upcoming evaluation rounds and candidate schedules.
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E4E7EF] bg-white px-3 py-1 text-xs font-medium text-[#0B1020]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#5146E5]" />
-            Somaiya TPO Panel Active
-          </span>
+          <button type="button" onClick={() => setShowSchedule((value) => !value)} className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white">Schedule interview</button>
           <span className="text-xs font-semibold text-[#56627A]">
             {statusCounts.Upcoming} Upcoming
           </span>
         </div>
       </section>
+
+      {showSchedule && <form onSubmit={handleScheduleSubmit} className="grid gap-4 rounded-2xl border border-[#E4E7EF] bg-white p-6 sm:grid-cols-2">
+        <label className="text-xs font-semibold">Candidate application<select required value={schedule.applicationId} onChange={(event) => setSchedule({ ...schedule, applicationId: event.target.value })} className="mt-1 w-full rounded-lg border p-2"><option value="">Select application</option>{candidates.map((candidate) => <option key={candidate.applicationId} value={candidate.applicationId}>{candidate.name} · {candidate.role}</option>)}</select></label>
+        <label className="text-xs font-semibold">Round/title<input required maxLength={120} value={schedule.title} onChange={(event) => setSchedule({ ...schedule, title: event.target.value })} className="mt-1 w-full rounded-lg border p-2" /></label>
+        <label className="text-xs font-semibold">Date<input required type="date" min={minScheduleDate} value={schedule.date} onChange={(event) => setSchedule({ ...schedule, date: event.target.value })} className="mt-1 w-full rounded-lg border p-2" /></label>
+        <label className="text-xs font-semibold">Time (your local time)<input required type="time" value={schedule.time} onChange={(event) => setSchedule({ ...schedule, time: event.target.value })} className="mt-1 w-full rounded-lg border p-2" /></label>
+        <label className="text-xs font-semibold">Mode<select value={schedule.mode} onChange={(event) => setSchedule({ ...schedule, mode: event.target.value })} className="mt-1 w-full rounded-lg border p-2"><option>Virtual</option><option>On Campus</option><option>In Person</option></select></label>
+        {schedule.mode === "Virtual" ? <label className="text-xs font-semibold">Meeting URL<input required type="url" value={schedule.meetingLink} onChange={(event) => setSchedule({ ...schedule, meetingLink: event.target.value })} className="mt-1 w-full rounded-lg border p-2" /></label> : <label className="text-xs font-semibold">Location<input required value={schedule.location} onChange={(event) => setSchedule({ ...schedule, location: event.target.value })} className="mt-1 w-full rounded-lg border p-2" /></label>}
+        <label className="text-xs font-semibold sm:col-span-2">Notes<textarea value={schedule.notes} onChange={(event) => setSchedule({ ...schedule, notes: event.target.value })} className="mt-1 w-full rounded-lg border p-2" /></label>
+        <div className="sm:col-span-2"><button disabled={isSaving || !candidates.length} type="submit" className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white">{isSaving ? "Scheduling…" : "Save interview"}</button>{!candidates.length && <p className="mt-2 text-xs text-[#56627A]">Shortlist a candidate before scheduling.</p>}</div>
+      </form>}
 
       {/* ============================================================== */}
       {/* 2. MINIMAL FILTER CONTROLS                                     */}
@@ -257,10 +323,10 @@ export function RecruiterInterviewsPage() {
                   {/* Compact Date Box */}
                   <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl border border-[#E4E7EF] bg-[#F7F8FC] text-center transition-colors group-hover:border-[#5146E5]/40 group-hover:bg-[#5146E5]/5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#56627A] group-hover:text-[#5146E5]">
-                      {interview.month}
+                      {new Date(interview.date).toLocaleDateString("en-IN", { month: "short" })}
                     </span>
                     <span className="font-display text-lg font-bold text-[#0B1020] leading-tight">
-                      {interview.day}
+                      {new Date(interview.date).getDate()}
                     </span>
                   </div>
 
@@ -279,6 +345,7 @@ export function RecruiterInterviewsPage() {
                           Completed
                         </span>
                       )}
+                      {interview.status === "CANCELLED" && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">Cancelled</span>}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs text-[#56627A]">
@@ -296,9 +363,7 @@ export function RecruiterInterviewsPage() {
                       </span>
                     </div>
 
-                    <p className="text-xs text-[#8F9CAE] truncate max-w-md">
-                      Panel: {interview.panel}
-                    </p>
+                    {interview.notes && <p className="text-xs text-[#8F9CAE] truncate max-w-md">{interview.notes}</p>}
                   </div>
                 </div>
 
@@ -378,45 +443,24 @@ export function RecruiterInterviewsPage() {
                   <div>
                     <span className="text-[#8F9CAE] block">Date & Time</span>
                     <span className="font-semibold text-[#0B1020]">
-                      {selectedInterview.date} · {selectedInterview.time}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[#8F9CAE] block">Duration</span>
-                    <span className="font-semibold text-[#0B1020]">
-                      {selectedInterview.duration}
+                      {displayDate(selectedInterview.date)} · {selectedInterview.time}
                     </span>
                   </div>
                   <div>
                     <span className="text-[#8F9CAE] block">Format / Mode</span>
                     <span className="font-semibold text-[#0B1020]">
-                      {selectedInterview.mode} ({selectedInterview.platform})
+                      {selectedInterview.mode}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-[#8F9CAE] block">Location Details</span>
-                    <span className="font-semibold text-[#0B1020] truncate block">
-                      {selectedInterview.locationDetails}
-                    </span>
-                  </div>
+                  {selectedInterview.location && <div><span className="text-[#8F9CAE] block">Location</span><span className="font-semibold text-[#0B1020] truncate block">{selectedInterview.location}</span></div>}
+                  {selectedInterview.meetingLink && <div><span className="text-[#8F9CAE] block">Meeting link</span><a className="font-semibold text-[#5146E5] underline break-all" href={selectedInterview.meetingLink} target="_blank" rel="noreferrer">Open meeting</a></div>}
                 </div>
               </div>
 
-              {/* Panel Allocation Card */}
-              <div className="rounded-xl border border-[#E4E7EF] p-4 space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">
-                  Evaluation Panel
-                </p>
-                <p className="text-xs font-semibold text-[#0B1020]">
-                  {selectedInterview.panel}
-                </p>
-                <p className="text-xs text-[#56627A] pt-1 border-t border-[#E4E7EF]">
-                  Focus: {selectedInterview.notes}
-                </p>
-              </div>
+              {selectedInterview.notes && <div className="rounded-xl border border-[#E4E7EF] p-4 space-y-2"><p className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">Notes</p><p className="text-xs text-[#56627A]">{selectedInterview.notes}</p></div>}
 
               <div className="rounded-xl border border-[#E4E7EF] p-4 text-xs text-[#56627A]">
-                {selectedInterview.date} · {selectedInterview.time} · {selectedInterview.status}
+                {displayDate(selectedInterview.date)} · {selectedInterview.time} · {selectedInterview.status}
               </div>
             </div>
 
@@ -439,9 +483,10 @@ export function RecruiterInterviewsPage() {
                         setRescheduleModal({
                           interviewId: selectedInterview.id,
                           candidateName: selectedInterview.candidateName,
-                          date: selectedInterview.date,
+                          date: localDateValue(selectedInterview.date),
                           time: selectedInterview.time,
                           location: selectedInterview.location,
+                          meetingLink: selectedInterview.meetingLink,
                           workMode: selectedInterview.mode,
                         })
                       }
@@ -457,6 +502,7 @@ export function RecruiterInterviewsPage() {
                     >
                       Mark complete
                     </button>
+                    <button type="button" disabled={isSaving} onClick={() => handleCancel(selectedInterview.id)} className="rounded-xl border border-rose-200 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">Cancel</button>
                   </>
                 )}
                 {selectedInterview.status === "COMPLETED" && (
@@ -498,13 +544,12 @@ export function RecruiterInterviewsPage() {
                   New Date
                 </label>
                 <input
-                  type="text"
+                  type="date"
                   required
                   value={rescheduleModal.date}
                   onChange={(e) =>
                     setRescheduleModal((prev) => ({ ...prev, date: e.target.value }))
                   }
-                  placeholder="e.g. 27 Aug 2026"
                   className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                 />
               </div>
@@ -514,26 +559,25 @@ export function RecruiterInterviewsPage() {
                   New Time
                 </label>
                 <input
-                  type="text"
+                  type="time"
                   required
                   value={rescheduleModal.time}
                   onChange={(e) =>
                     setRescheduleModal((prev) => ({ ...prev, time: e.target.value }))
                   }
-                  placeholder="e.g. 03:30 PM"
                   className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#0B1020] mb-1">
-                  Location or meeting link
+                  {rescheduleModal.workMode === "Virtual" ? "Meeting URL" : "Location"}
                 </label>
                 <input
-                  type="text"
+                  type={rescheduleModal.workMode === "Virtual" ? "url" : "text"}
                   required
-                  value={rescheduleModal.location || ""}
-                  onChange={(e) => setRescheduleModal((prev) => ({ ...prev, location: e.target.value }))}
+                  value={rescheduleModal.workMode === "Virtual" ? rescheduleModal.meetingLink || "" : rescheduleModal.location || ""}
+                  onChange={(e) => setRescheduleModal((prev) => ({ ...prev, [rescheduleModal.workMode === "Virtual" ? "meetingLink" : "location"]: e.target.value }))}
                   className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                 />
               </div>
@@ -548,7 +592,7 @@ export function RecruiterInterviewsPage() {
                   className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                 >
                   <option value="Virtual">Virtual</option>
-                  <option value="On campus">On campus</option>
+                  <option value="On Campus">On Campus</option>
                   <option value="In Person">In Person</option>
                 </select>
               </div>

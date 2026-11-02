@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { offersApi } from "../services/offersApi.js";
 import { applicationsApi } from "../services/applicationsApi.js";
 
-const OFFER_STATUS_TABS = ["All", "Awaiting response", "Sent", "Accepted", "Draft", "Declined"];
+const OFFER_STATUS_TABS = ["All", "PENDING", "ACCEPTED", "DECLINED"];
 
 export function RecruiterOffersPage() {
   const [offers, setOffers] = useState([]);
@@ -37,11 +37,11 @@ export function RecruiterOffersPage() {
         offersApi.getOffers(),
         applicationsApi.getRecruiterCandidates(),
       ]);
-      const mappedOffers = nextOffers.map((o) => ({
-        ...o,
-        status: o.status === "ACCEPTED" ? "Accepted" : o.status === "DECLINED" ? "Declined" : "Pending",
-      }));
-      const applications = (candidateData?.candidates || []).map((c) => ({
+      const mappedOffers = nextOffers;
+      const offeredApplicationIds = new Set(nextOffers.map((offer) => offer.applicationId));
+      const applications = (candidateData?.candidates || []).filter((candidate) =>
+        ["SHORTLISTED", "INTERVIEW"].includes(candidate.status) && !offeredApplicationIds.has(candidate.applicationId)
+      ).map((c) => ({
         applicationId: c.applicationId,
         candidateName: c.name,
         role: c.role,
@@ -103,19 +103,6 @@ export function RecruiterOffersPage() {
     }
   };
 
-  const handleUpdateStatus = async (_offerId, nextStatus) => {
-    setIsSaving(true);
-    try {
-      setSelectedOffer(null);
-      await loadOffers();
-      showToast(`Offer marked as ${nextStatus}.`);
-    } catch (error) {
-      showToast(error.response?.data?.message || error.message || "Unable to update this offer. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // Close drawer on Escape
   useEffect(() => {
     function handleKeyDown(e) {
@@ -137,15 +124,11 @@ export function RecruiterOffersPage() {
   // Status badge styling helper
   const getStatusBadgeStyle = (status) => {
     switch (status) {
-      case "Accepted":
+      case "ACCEPTED":
         return "bg-[#F0FDF4] text-[#16886A] border-[#16886A]/20";
-      case "Awaiting response":
-      case "Sent":
+      case "PENDING":
         return "bg-[#5146E5]/10 text-[#5146E5] border-[#5146E5]/20";
-      case "Draft":
-        return "bg-[#F0F2F7] text-[#56627A] border-[#E4E7EF]";
-      case "Declined":
-      case "Expired":
+      case "DECLINED":
         return "bg-rose-50 text-rose-700 border-rose-200";
       default:
         return "bg-[#F7F8FC] text-[#56627A] border-[#E4E7EF]";
@@ -181,7 +164,7 @@ export function RecruiterOffersPage() {
             Offers
           </h1>
           <p className="mt-1 text-sm text-[#56627A]">
-            Draft, release, and track employment offers and candidate acceptance status.
+            Create and track employment offers and candidate acceptance status.
           </p>
         </div>
 
@@ -370,33 +353,20 @@ export function RecruiterOffersPage() {
                   Compensation Structure
                 </p>
                 <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div>
+                  {selectedOffer.stipend && <div>
                     <span className="text-[#8F9CAE] block">Internship Stipend</span>
                     <span className="font-display text-base font-bold text-[#0B1020]">
                       {selectedOffer.stipend}
                     </span>
-                  </div>
+                  </div>}
                   <div>
-                    <span className="text-[#8F9CAE] block">Full-Time Conversion CTC</span>
+                    <span className="text-[#8F9CAE] block">CTC</span>
                     <span className="font-display text-base font-bold text-[#5146E5]">
                       {selectedOffer.ctc}
                     </span>
                   </div>
                 </div>
 
-                {selectedOffer.compensationBreakdown && (
-                  <div className="pt-3 border-t border-[#E4E7EF] space-y-2">
-                    {selectedOffer.compensationBreakdown.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between text-xs text-[#56627A]"
-                      >
-                        <span>{item.label}</span>
-                        <span className="font-semibold text-[#0B1020]">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Milestones & Dates */}
@@ -432,15 +402,6 @@ export function RecruiterOffersPage() {
                 </div>
               </div>
 
-              {/* Offer Notes */}
-              <div className="rounded-xl border border-[#E4E7EF] p-4 space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">
-                  Administrative Notes
-                </p>
-                <p className="text-xs text-[#56627A] leading-relaxed">
-                  {selectedOffer.notes}
-                </p>
-              </div>
             </div>
 
             {/* Sticky Actions Footer */}
@@ -461,33 +422,6 @@ export function RecruiterOffersPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                {selectedOffer.status === "Draft" && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedOffer.id, "Sent")}
-                    className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors shadow-subtle"
-                  >
-                    Release offer
-                  </button>
-                )}
-                {selectedOffer.status === "Sent" && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedOffer.id, "Awaiting response")}
-                    className="rounded-xl border border-[#E4E7EF] px-3.5 py-2 text-xs font-semibold text-[#0B1020] hover:bg-[#F7F8FC]"
-                  >
-                    Mark awaiting response
-                  </button>
-                )}
-                {selectedOffer.status === "Awaiting response" && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedOffer.id, "Accepted")}
-                    className="rounded-xl bg-[#16886A] px-4 py-2 text-xs font-semibold text-white hover:bg-[#13745a] transition-colors"
-                  >
-                    Mark accepted
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setSelectedOffer(null)}
@@ -502,7 +436,7 @@ export function RecruiterOffersPage() {
       )}
 
       {/* ============================================================== */}
-      {/* 5. CREATE OFFER MODAL (LOCAL STATE ONLY)                       */}
+      {/* 5. CREATE OFFER MODAL                                         */}
       {/* ============================================================== */}
       {createModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
