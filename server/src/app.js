@@ -17,6 +17,7 @@ import adminRouter from './routes/adminRoutes.js'
 import resumeRouter from './routes/resumeRoutes.js'
 
 export const app = express()
+if (env.NODE_ENV === 'production') app.set('trust proxy', 1)
 
 app.use(helmet())
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
