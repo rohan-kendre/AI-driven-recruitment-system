@@ -1,6 +1,7 @@
-import { useState, useId } from "react";
+import { useState, useId, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { studentApi } from "../services/studentApi.js";
 
 // Initial profile data grounded in the NexHire student domain
 const initialProfile = {
@@ -86,6 +87,31 @@ export function StudentProfilePage() {
   const [formData, setFormData] = useState(profile);
   const [toastMessage, setToastMessage] = useState(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    studentApi
+      .getProfile()
+      .then((data) => {
+        if (!isMounted || !data) return;
+        setProfile((prev) => ({
+          ...prev,
+          name: data.name || user?.name || prev.name,
+          email: data.email || user?.email || prev.email,
+          rollNumber: data.rollNumber || prev.rollNumber,
+          branch: data.branch || prev.branch,
+          cgpa: String(data.cgpa ?? prev.cgpa),
+          backlogs: data.backlogs ?? prev.backlogs,
+          graduationYear: String(data.graduationYear ?? prev.graduationYear),
+          phone: data.phone || prev.phone,
+          bio: data.bio || prev.bio,
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
   // Accessible IDs for edit modal
   const nameId = useId();
   const phoneId = useId();
@@ -106,11 +132,22 @@ export function StudentProfilePage() {
     setIsEditModalOpen(false);
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setProfile(formData);
-    setIsEditModalOpen(false);
-    showToast("Profile details updated successfully.");
+    try {
+      await studentApi.updateProfile({
+        phone: formData.phone,
+        bio: formData.bio,
+        rollNumber: formData.rollNumber,
+        branch: formData.branch,
+        cgpa: formData.cgpa,
+      });
+      setProfile(formData);
+      setIsEditModalOpen(false);
+      showToast("Profile details updated successfully.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to update profile.");
+    }
   };
 
   return (

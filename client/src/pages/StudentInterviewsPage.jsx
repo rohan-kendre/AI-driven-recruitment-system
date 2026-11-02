@@ -1,10 +1,8 @@
-import { useState, useMemo, useCallback, useEffect, useContext } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { interviewsApi } from "../services/interviewsApi.js";
 
 export function StudentInterviewsPage() {
-  const { user } = useContext(AuthContext);
   const [interviews, setInterviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -21,13 +19,18 @@ export function StudentInterviewsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setInterviews(await interviewsOffersApi.getStudentInterviews(user));
+      const data = await interviewsApi.getInterviews();
+      const mapped = data.map((item) => ({
+        ...item,
+        status: item.status === "COMPLETED" ? "Completed" : "Upcoming",
+      }));
+      setInterviews(mapped);
     } catch (error) {
-      setLoadError(error.message || "Unable to load interviews. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load interviews. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(loadInterviews);

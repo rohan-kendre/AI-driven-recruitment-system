@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area
@@ -15,12 +15,27 @@ import {
   placementFunnel
 } from "../data/tpoPlacementAnalyticsData.js";
 import { Button } from "../components/ui.jsx";
+import { tpoApi } from "../services/tpoApi.js";
 
 export function TpoPlacementAnalyticsPage() {
   const [academicYear, setAcademicYear] = useState("2026-27");
   const [branchFilter, setBranchFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [studentSearch, setStudentSearch] = useState("");
+  const [realStats, setRealStats] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    tpoApi
+      .getStats()
+      .then((data) => {
+        if (isMounted && data) setRealStats(data);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredStudents = useMemo(() => {
     return studentsList.filter((s) => {
@@ -79,12 +94,12 @@ export function TpoPlacementAnalyticsPage() {
       {/* 2. TOP METRICS */}
       <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {[
-          { label: "Total Students", value: statsOverview.totalStudents },
-          { label: "Students Placed", value: statsOverview.placed, highlight: true },
-          { label: "Placement Rate", value: statsOverview.placementRate, highlight: true },
-          { label: "In Process", value: statsOverview.inProcess },
+          { label: "Total Students", value: realStats?.totalStudents ?? statsOverview.totalStudents },
+          { label: "Students Placed", value: realStats?.acceptedOffers ?? statsOverview.placed, highlight: true },
+          { label: "Placement Rate", value: realStats ? `${realStats.placementRate}%` : statsOverview.placementRate, highlight: true },
+          { label: "In Process", value: realStats?.totalApplications ?? statsOverview.inProcess },
           { label: "Unplaced", value: statsOverview.unplaced },
-          { label: "Offers Received", value: statsOverview.offersReceived },
+          { label: "Offers Received", value: realStats?.offersCount ?? statsOverview.offersReceived },
           { label: "Highest Package", value: statsOverview.highestPackage, highlight: true },
           { label: "Average Package", value: statsOverview.averagePackage },
           { label: "Median Package", value: statsOverview.medianPackage },

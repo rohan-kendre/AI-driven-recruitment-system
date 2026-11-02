@@ -8,6 +8,12 @@ import { authRouter } from './routes/authRoutes.js'
 import { healthRouter } from './routes/healthRoutes.js'
 import jobRouter from './routes/jobRoutes.js'
 import applicationRouter from './routes/applicationRoutes.js'
+import studentRouter from './routes/studentRoutes.js'
+import companyRouter from './routes/companyRoutes.js'
+import interviewRouter from './routes/interviewRoutes.js'
+import offerRouter from './routes/offerRoutes.js'
+import tpoRouter from './routes/tpoRoutes.js'
+import adminRouter from './routes/adminRoutes.js'
 
 export const app = express()
 
@@ -20,6 +26,12 @@ app.use('/api/health', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/jobs', jobRouter)
 app.use('/api/applications', applicationRouter)
+app.use('/api/students', studentRouter)
+app.use('/api/companies', companyRouter)
+app.use('/api/interviews', interviewRouter)
+app.use('/api/offers', offerRouter)
+app.use('/api/tpo', tpoRouter)
+app.use('/api/admin', adminRouter)
 
 app.use(notFoundMiddleware)
 app.use(errorMiddleware)

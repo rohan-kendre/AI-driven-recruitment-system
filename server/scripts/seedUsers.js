@@ -5,6 +5,8 @@ import { StudentProfile } from "../src/models/StudentProfile.js";
 import { Company } from "../src/models/Company.js";
 import { Job } from "../src/models/Job.js";
 import { Application } from "../src/models/Application.js";
+import { Interview } from "../src/models/Interview.js";
+import { Offer } from "../src/models/Offer.js";
 import { APPLICATION_STATUS } from "../src/constants/applicationStatuses.js";
 
 export const DEMO_USERS = [
@@ -89,7 +91,9 @@ async function seedAll() {
   // 3. Seed Company for Recruiter
   let company = null;
   if (recruiterUser) {
-    company = await Company.findOne({ name: "Acme Technologies" });
+    company = await Company.findOne({
+      $or: [{ createdBy: recruiterUser._id }, { name: "Acme Technologies" }],
+    });
     if (!company) {
       company = await Company.create({
         name: "Acme Technologies",
@@ -196,24 +200,24 @@ async function seedAll() {
     }
   }
 
-  // 5. Seed one initial application for student on the second job
-  if (studentUser && studentProfile && recruiterUser) {
+  // 5. Seed initial application, interview, and offer
+  if (studentUser && studentProfile && recruiterUser && company) {
     const targetJob = await Job.findOne({
       title: "Full-Stack Engineer - Early Career",
       recruiterId: recruiterUser._id,
     });
     if (targetJob) {
-      const existingApp = await Application.findOne({
+      let app = await Application.findOne({
         jobId: targetJob._id,
         studentId: studentUser._id,
       });
-      if (!existingApp) {
+      if (!app) {
         const now = new Date(Date.now() - 3 * 86400000); // 3 days ago
-        await Application.create({
+        app = await Application.create({
           jobId: targetJob._id,
           studentId: studentUser._id,
           studentProfileId: studentProfile._id,
-          status: APPLICATION_STATUS.SCREENING,
+          status: APPLICATION_STATUS.INTERVIEW,
           statusHistory: [
             {
               status: APPLICATION_STATUS.APPLIED,
@@ -223,15 +227,59 @@ async function seedAll() {
             },
             {
               status: APPLICATION_STATUS.SCREENING,
-              changedAt: new Date(Date.now() - 1 * 86400000),
+              changedAt: new Date(Date.now() - 2 * 86400000),
               changedBy: recruiterUser._id,
               note: "Candidate shortlisted for technical screening.",
+            },
+            {
+              status: APPLICATION_STATUS.INTERVIEW,
+              changedAt: new Date(Date.now() - 1 * 86400000),
+              changedBy: recruiterUser._id,
+              note: "Interview scheduled.",
             },
           ],
           appliedAt: now,
           notes: "Applicant possesses verified academic eligibility.",
         });
         console.log(`[SEED] Created demo application for ${studentUser.name} on ${targetJob.title}`);
+      }
+
+      // 6. Seed scheduled interview
+      const existingInterview = await Interview.findOne({ applicationId: app._id });
+      if (!existingInterview) {
+        await Interview.create({
+          applicationId: app._id,
+          jobId: targetJob._id,
+          studentId: studentUser._id,
+          recruiterId: recruiterUser._id,
+          title: "Technical Round 1",
+          date: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
+          time: "10:30 AM",
+          mode: "Virtual",
+          location: "NexHire virtual meeting room",
+          meetingLink: "https://meet.google.com/nex-hire-interview",
+          status: "SCHEDULED",
+          notes: "Focus on React component architecture and Node.js REST API design.",
+        });
+        console.log(`[SEED] Created scheduled interview for ${studentUser.name}`);
+      }
+
+      // 7. Seed pending offer
+      const existingOffer = await Offer.findOne({ applicationId: app._id });
+      if (!existingOffer) {
+        await Offer.create({
+          applicationId: app._id,
+          jobId: targetJob._id,
+          studentId: studentUser._id,
+          recruiterId: recruiterUser._id,
+          companyId: company._id,
+          ctc: "16.0 LPA CTC",
+          stipend: "₹40,000 / month",
+          joiningDate: "2026-07-01",
+          deadline: "2026-06-15",
+          status: "PENDING",
+        });
+        console.log(`[SEED] Created pending offer for ${studentUser.name}`);
       }
     }
   }
@@ -242,6 +290,8 @@ async function seedAll() {
     companies: await Company.countDocuments(),
     jobs: await Job.countDocuments(),
     applications: await Application.countDocuments(),
+    interviews: await Interview.countDocuments(),
+    offers: await Offer.countDocuments(),
   };
 
   console.log("[SEED] All demo data seeded successfully.");

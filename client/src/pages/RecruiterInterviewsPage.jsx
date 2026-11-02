@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { interviewsApi } from "../services/interviewsApi.js";
 
 const STATUS_FILTERS = ["All", "Upcoming", "Completed"];
 const MODE_FILTERS = ["All Modes", "Virtual", "On campus"];
@@ -25,9 +25,10 @@ export function RecruiterInterviewsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setInterviews(await interviewsOffersApi.getRecruiterInterviews());
+      const data = await interviewsApi.getInterviews();
+      setInterviews(data);
     } catch (error) {
-      setLoadError(error.message || "Unable to load interviews. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load interviews. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -59,12 +60,12 @@ export function RecruiterInterviewsPage() {
   const handleMarkComplete = async (interviewId) => {
     setIsSaving(true);
     try {
-      await interviewsOffersApi.completeInterview(interviewId);
+      await interviewsApi.updateInterview(interviewId, { status: "COMPLETED" });
       setSelectedInterview(null);
       await loadInterviews();
       showToast("Interview marked as completed.");
     } catch (error) {
-      showToast(error.message || "Unable to complete the interview. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to complete the interview. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -77,13 +78,13 @@ export function RecruiterInterviewsPage() {
     const { interviewId, date, time, location, workMode } = rescheduleModal;
     setIsSaving(true);
     try {
-      await interviewsOffersApi.rescheduleInterview(interviewId, { date, time, location, workMode });
+      await interviewsApi.updateInterview(interviewId, { status: "RESCHEDULED", date, time, location, mode: workMode });
       setRescheduleModal(null);
       setSelectedInterview(null);
       await loadInterviews();
       showToast(`Interview rescheduled to ${date} at ${time}.`);
     } catch (error) {
-      showToast(error.message || "Unable to reschedule the interview. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to reschedule the interview. Please try again.");
     } finally {
       setIsSaving(false);
     }

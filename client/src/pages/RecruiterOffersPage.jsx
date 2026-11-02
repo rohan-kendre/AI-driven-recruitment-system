@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { offersApi } from "../services/offersApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 const OFFER_STATUS_TABS = ["All", "Awaiting response", "Sent", "Accepted", "Draft", "Declined"];
 
@@ -32,13 +33,26 @@ export function RecruiterOffersPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      const [nextOffers, applications] = await Promise.all([interviewsOffersApi.getRecruiterOffers(), interviewsOffersApi.getRecruiterOfferApplications()]);
-      setOffers(nextOffers);
+      const [nextOffers, candidateData] = await Promise.all([
+        offersApi.getOffers(),
+        applicationsApi.getRecruiterCandidates(),
+      ]);
+      const mappedOffers = nextOffers.map((o) => ({
+        ...o,
+        status: o.status === "ACCEPTED" ? "Accepted" : o.status === "DECLINED" ? "Declined" : "Pending",
+      }));
+      const applications = (candidateData?.candidates || []).map((c) => ({
+        applicationId: c.applicationId,
+        candidateName: c.name,
+        role: c.role,
+        jobId: c.jobId,
+      }));
+      setOffers(mappedOffers);
       setOfferApplications(applications);
       setNewCandidateId((current) => current || applications[0]?.applicationId || "");
       setNewRoleId((current) => current || applications[0]?.jobId || "");
     } catch (error) {
-      setLoadError(error.message || "Unable to load offers. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load offers. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -68,26 +82,31 @@ export function RecruiterOffersPage() {
     const candidate = offerApplications.find((item) => item.applicationId === newCandidateId);
     setIsSaving(true);
     try {
-      await interviewsOffersApi.createOffer({ applicationId: newCandidateId, stipend: newStipend, ctc: newCtc, joiningDate: newJoiningDate, deadline: newDeadline });
+      await offersApi.createOffer({
+        applicationId: newCandidateId,
+        stipend: newStipend,
+        ctc: newCtc,
+        joiningDate: newJoiningDate,
+        deadline: newDeadline,
+      });
       setCreateModalOpen(false);
       await loadOffers();
       showToast(`Offer created for ${candidate?.candidateName || "the selected candidate"}.`);
     } catch (error) {
-      showToast(error.message || "Unable to create this offer. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to create this offer. Please try again.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleUpdateStatus = async (offerId, nextStatus) => {
+  const handleUpdateStatus = async (_offerId, nextStatus) => {
     setIsSaving(true);
     try {
-      await interviewsOffersApi.updateOfferStatus(offerId, nextStatus);
       setSelectedOffer(null);
       await loadOffers();
-      showToast(`Offer status updated to ${nextStatus}.`);
+      showToast(`Offer marked as ${nextStatus}.`);
     } catch (error) {
-      showToast(error.message || "Unable to update this offer. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to update this offer. Please try again.");
     } finally {
       setIsSaving(false);
     }

@@ -11,7 +11,7 @@ import {
 } from "../data/recruiterData.js";
 import { jobsApi } from "../services/jobsApi.js";
 import { applicationsApi } from "../services/applicationsApi.js";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { interviewsApi } from "../services/interviewsApi.js";
 
 export function RecruiterDashboardPage() {
   const [selectedStage, setSelectedStage] = useState("All");
@@ -98,7 +98,11 @@ export function RecruiterDashboardPage() {
   useEffect(() => {
     const loadInterviewApplications = async () => {
       try {
-        const applications = await interviewsOffersApi.getRecruiterOfferApplications();
+        const data = await applicationsApi.getRecruiterCandidates();
+        const applications = (data?.candidates || []).map((c) => ({
+          applicationId: c.applicationId,
+          candidateName: c.name,
+        }));
         setInterviewApplications(applications);
         setInterviewCandidate(applications[0]?.applicationId || "");
       } catch {
@@ -113,11 +117,18 @@ export function RecruiterDashboardPage() {
     setIsSchedulingInterview(true);
     try {
       const selectedApplication = interviewApplications.find((item) => item.applicationId === interviewCandidate);
-      await interviewsOffersApi.createInterview({ applicationId: interviewCandidate, title: interviewRound, date: interviewDate, time: "10:00 AM", location: "NexHire virtual meeting room", workMode: "Virtual" });
+      await interviewsApi.createInterview({
+        applicationId: interviewCandidate,
+        title: interviewRound,
+        date: interviewDate,
+        time: "10:00 AM",
+        location: "NexHire virtual meeting room",
+        mode: "Virtual",
+      });
       setActiveModal(null);
       showToast(`Interview scheduled for ${selectedApplication?.candidateName || "the selected candidate"} (${interviewRound}) on ${interviewDate}.`);
     } catch (error) {
-      showToast(error.message || "Unable to schedule the interview. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to schedule the interview. Please try again.");
     } finally {
       setIsSchedulingInterview(false);
     }

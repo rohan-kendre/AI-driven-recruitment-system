@@ -234,9 +234,9 @@ export function ResumeATSPage() {
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1020]/40 backdrop-blur-sm animate-fade-in"
         >
-          <div className="w-full max-w-md bg-white p-8 shadow-2xl">
+          <div className="w-full max-w-md bg-white p-8 shadow-2xl rounded-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-[#0B1020]">Replace current resume</h3>
+              <h3 className="text-lg font-bold text-[#0B1020]">Upload new resume</h3>
               <button
                 onClick={() => setIsReplaceModalOpen(false)}
                 className="text-slate-400 hover:text-[#0B1020] text-xl"
@@ -245,26 +245,53 @@ export function ResumeATSPage() {
               </button>
             </div>
             
-            <div className="border border-[#E4E7EF] bg-[#FAFAFC] p-10 text-center cursor-pointer hover:border-[#0B1020] transition-colors">
-              <p className="text-sm font-medium text-[#0B1020]">Upload PDF or DOCX</p>
-              <p className="text-xs text-[#56627A] mt-2">Max 5MB</p>
-            </div>
+            <label className="block border-2 border-dashed border-[#E4E7EF] bg-[#FAFAFC] p-8 text-center cursor-pointer hover:border-[#5146E5] transition-colors rounded-xl">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const validTypes = [
+                    "application/pdf",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                  ];
+                  const hasValidExt = /\.(pdf|docx?)$/i.test(file.name);
+                  if (!validTypes.includes(file.type) && !hasValidExt) {
+                    showToast("Please select a valid document format (.pdf, .doc, .docx).");
+                    return;
+                  }
+                  if (file.size > 5 * 1024 * 1024) {
+                    showToast("File size exceeds 5MB limit. Please choose a smaller file.");
+                    return;
+                  }
+                  setSelectedVersion((prev) => ({
+                    ...prev,
+                    fileName: file.name,
+                    fileSize: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+                    date: "Just now",
+                  }));
+                  setIsReplaceModalOpen(false);
+                  showToast(`Selected "${file.name}" as active resume.`);
+                }}
+              />
+              <p className="text-sm font-bold text-[#0B1020]">Click to choose file</p>
+              <p className="text-xs text-[#56627A] mt-1.5">PDF, DOC, or DOCX up to 5MB</p>
+              <p className="text-[11px] text-[#5146E5] mt-3">Verified format for campus drives</p>
+            </label>
 
-            <div className="mt-8 flex justify-end gap-3">
+            <p className="mt-4 text-[11px] text-[#56627A] leading-relaxed">
+              Note: Automated ATS scores shown are calibrated samples for guidance. Full AI semantic analysis is part of future scope.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setIsReplaceModalOpen(false)}
                 className="text-sm font-medium text-[#56627A] hover:text-[#0B1020] px-4 py-2"
               >
                 Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setIsReplaceModalOpen(false);
-                  showToast("Resume replacement uploaded. (Demo state)");
-                }}
-                className="text-sm font-medium bg-[#0B1020] text-white px-5 py-2 hover:bg-[#1C2438] transition-colors"
-              >
-                Choose file
               </button>
             </div>
           </div>

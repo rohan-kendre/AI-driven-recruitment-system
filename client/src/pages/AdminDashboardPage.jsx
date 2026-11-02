@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { FilterTabs, Toast } from "../components/ui.jsx";
+import { adminApi } from "../services/adminApi.js";
 import {
   adminProfile,
   overviewMetrics,
@@ -24,6 +25,47 @@ export function AdminDashboardPage() {
     setTimeout(() => setFeedbackToast(null), 5000);
   };
 
+  const loadUsers = useCallback(async () => {
+    try {
+      const realUsers = await adminApi.getUsers();
+      if (realUsers?.length > 0) {
+        const mappedUsers = realUsers.map((u) => ({
+          id: u.id || u._id,
+          name: u.name,
+          email: u.email,
+          role: u.role === "STUDENT" ? "Student" : u.role === "RECRUITER" ? "Recruiter" : u.role === "TPO" ? "TPO" : "Admin",
+          status: u.status === "ACTIVE" ? "Active" : "Suspended",
+          approvalStatus: u.approvalStatus,
+          organization: u.role === "RECRUITER" ? "Acme Technologies" : "Somaiya Engineering",
+          department: u.role === "STUDENT" ? "Computer Engineering" : "Administration",
+        }));
+        setUsers(mappedUsers);
+
+        // Derive pending approvals
+        const pending = realUsers
+          .filter((u) => u.approvalStatus === "PENDING")
+          .map((u) => ({
+            id: u.id || u._id,
+            name: u.name,
+            email: u.email,
+            role: "Recruiter",
+            organization: "Acme Technologies",
+            status: "Pending review",
+            submittedDate: new Date(u.createdAt).toISOString().slice(0, 10),
+          }));
+        if (pending.length > 0) {
+          setApprovals(pending);
+        }
+      }
+    } catch {
+      // Keep initial view fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
   // Keyboard escape listener for open drawers
   useEffect(() => {
     function handleKeyDown(e) {
@@ -43,48 +85,46 @@ export function AdminDashboardPage() {
   }, [selectedApproval, selectedUser]);
 
   // Handle local approval
-  const handleApprove = (id, name, role) => {
-    setApprovals((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: "Approved" } : item)),
-    );
-    if (selectedApproval?.id === id) {
-      setSelectedApproval((prev) => (prev ? { ...prev, status: "Approved" } : null));
+  const handleApprove = async (id, name, role) => {
+    try {
+      await adminApi.updateUserApproval(id, "APPROVED");
+      await loadUsers();
+      showToast(`Account approved: ${name} granted ${role} access.`);
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to approve account.");
     }
-    showToast(`Account approved: ${name} granted ${role} access.`);
+    if (selectedApproval?.id === id) {
+      setSelectedApproval(null);
+    }
   };
 
   // Handle local rejection
-  const handleReject = (id, name) => {
-    setApprovals((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: "Rejected" } : item)),
-    );
-    if (selectedApproval?.id === id) {
-      setSelectedApproval((prev) => (prev ? { ...prev, status: "Rejected" } : null));
+  const handleReject = async (id, name) => {
+    try {
+      await adminApi.updateUserApproval(id, "REJECTED");
+      await loadUsers();
+      showToast(`Account rejected: ${name} request marked as declined.`);
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to reject account.");
     }
-    showToast(`Account rejected: ${name} request marked as declined.`);
+    if (selectedApproval?.id === id) {
+      setSelectedApproval(null);
+    }
   };
 
   // Handle user status toggle
-  const handleToggleUserStatus = (userId) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === userId) {
-          const newStatus = u.status === "Suspended" ? "Active" : "Suspended";
-          showToast(`Account status updated for ${u.name} to ${newStatus}.`);
-          return { ...u, status: newStatus };
-        }
-        return u;
-      }),
-    );
+  const handleToggleUserStatus = async (userId) => {
+    const userToToggle = users.find((u) => u.id === userId);
+    const targetStatus = userToToggle?.status === "Suspended" ? "ACTIVE" : "SUSPENDED";
+    try {
+      await adminApi.updateUserStatus(userId, targetStatus);
+      await loadUsers();
+      showToast(`Account status updated to ${targetStatus === "ACTIVE" ? "Active" : "Suspended"}.`);
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to toggle status.");
+    }
     if (selectedUser?.id === userId) {
-      setSelectedUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: prev.status === "Suspended" ? "Active" : "Suspended",
-            }
-          : null,
-      );
+      setSelectedUser(null);
     }
   };
 

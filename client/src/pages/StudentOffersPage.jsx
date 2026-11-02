@@ -1,10 +1,8 @@
-import { useState, useMemo, useRef, useCallback, useContext, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { offersApi } from "../services/offersApi.js";
 
 export function StudentOffersPage() {
-  const { user } = useContext(AuthContext);
   const [offers, setOffers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -17,13 +15,18 @@ export function StudentOffersPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setOffers(await interviewsOffersApi.getStudentOffers(user));
+      const data = await offersApi.getOffers();
+      const mapped = data.map((o) => ({
+        ...o,
+        status: o.status === "ACCEPTED" ? "Accepted" : o.status === "DECLINED" ? "Declined" : "Pending",
+      }));
+      setOffers(mapped);
     } catch (error) {
-      setLoadError(error.message || "Unable to load offers. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load offers. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(loadOffers);
@@ -34,13 +37,14 @@ export function StudentOffersPage() {
   const handleConfirmDecision = async (offerId, newStatus) => {
     setIsSaving(true);
     try {
-      await interviewsOffersApi.updateOfferStatus(offerId, newStatus);
+      const canonical = newStatus === "Accepted" ? "ACCEPTED" : "DECLINED";
+      await offersApi.updateOfferStatus(offerId, canonical);
       setDecisionModal(null);
       await loadOffers();
       setFeedbackToast(newStatus === "Accepted" ? "Offer accepted. Record updated." : "Offer declined.");
       setTimeout(() => setFeedbackToast(null), 6000);
     } catch (error) {
-      setFeedbackToast(error.message || "Unable to update the offer. Please try again.");
+      setFeedbackToast(error.response?.data?.message || error.message || "Unable to update the offer. Please try again.");
     } finally {
       setIsSaving(false);
     }

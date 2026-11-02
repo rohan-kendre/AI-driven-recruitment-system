@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Badge, Button, Toast } from "../components/ui.jsx";
 import { initialCompanyProfile } from "../data/recruiterJobsData.js";
+import { companyApi } from "../services/companyApi.js";
 
 export function RecruiterCompanyPage() {
   const [profile, setProfile] = useState(initialCompanyProfile);
@@ -17,19 +18,45 @@ export function RecruiterCompanyPage() {
     headquarters: profile.headquarters,
   });
 
+  useEffect(() => {
+    let isMounted = true;
+    companyApi
+      .getMyCompany()
+      .then((data) => {
+        if (!isMounted || !data) return;
+        setProfile((prev) => ({
+          ...prev,
+          name: data.name || prev.name,
+          website: data.website || prev.website,
+          industry: data.industry || prev.industry,
+          location: data.location || prev.location,
+          description: data.description || prev.description,
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const showToast = (msg) => {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 5000);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    setProfile((prev) => ({
-      ...prev,
-      ...formData,
-    }));
-    setIsEditing(false);
-    showToast("Company profile updated successfully.");
+    try {
+      await companyApi.updateMyCompany(formData);
+      setProfile((prev) => ({
+        ...prev,
+        ...formData,
+      }));
+      setIsEditing(false);
+      showToast("Company profile updated successfully.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to update company profile.");
+    }
   };
 
   // Close modal on Escape
