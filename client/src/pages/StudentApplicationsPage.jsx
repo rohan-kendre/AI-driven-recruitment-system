@@ -1,10 +1,8 @@
-import { useState, useMemo, useCallback, useContext, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 export function StudentApplicationsPage() {
-  const { user } = useContext(AuthContext);
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -17,13 +15,14 @@ export function StudentApplicationsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setApplications(await jobsApplicationsApi.getStudentApplications(user));
+      const data = await applicationsApi.getMyApplications();
+      setApplications(data);
     } catch (error) {
-      setLoadError(error.message || "Unable to load applications. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load applications. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(loadApplications);

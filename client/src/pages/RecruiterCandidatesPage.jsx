@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 const STAGES = ["All", "Applied", "Screening", "Shortlisted", "Interview", "Offer"];
 
@@ -26,11 +26,11 @@ export function RecruiterCandidatesPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      const data = await jobsApplicationsApi.getRecruiterCandidates();
+      const data = await applicationsApi.getRecruiterCandidates();
       setCandidates(data.candidates);
       setJobs(data.jobs);
     } catch (error) {
-      setLoadError(error.message || "Unable to load candidates. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load candidates. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -78,12 +78,12 @@ export function RecruiterCandidatesPage() {
   const handleAdvanceStage = async (candidateId, nextStage) => {
     setUpdatingCandidateId(candidateId);
     try {
-      await jobsApplicationsApi.updateRecruiterApplicationStatus(candidateId, nextStage);
+      await applicationsApi.updateApplicationStatus(candidateId, nextStage);
       await loadCandidates();
       setSelectedCandidate(null);
       showToast(`Candidate moved to ${nextStage}.`);
     } catch (error) {
-      showToast(error.message || "Unable to update the candidate stage. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to update the candidate stage. Please try again.");
     } finally {
       setUpdatingCandidateId(null);
     }
@@ -92,12 +92,12 @@ export function RecruiterCandidatesPage() {
   const handleDeclineCandidate = async (candidateId) => {
     setUpdatingCandidateId(candidateId);
     try {
-      await jobsApplicationsApi.updateRecruiterApplicationStatus(candidateId, "Rejected");
+      await applicationsApi.updateApplicationStatus(candidateId, "Rejected");
       await loadCandidates();
       setSelectedCandidate(null);
       showToast("Candidate marked as declined for this recruitment drive.");
     } catch (error) {
-      showToast(error.message || "Unable to decline this candidate. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to decline this candidate. Please try again.");
     } finally {
       setUpdatingCandidateId(null);
     }

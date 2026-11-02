@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { jobsApi } from "../services/jobsApi.js";
 
 export function RecruiterJobsPage() {
   const [jobs, setJobs] = useState([]);
@@ -36,9 +36,10 @@ export function RecruiterJobsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setJobs(await jobsApplicationsApi.getRecruiterJobs());
+      const data = await jobsApi.getMyJobs();
+      setJobs(data);
     } catch (error) {
-      setLoadError(error.message || "Unable to load recruitment drives. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load recruitment drives. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -93,17 +94,17 @@ export function RecruiterJobsPage() {
     setIsSaving(true);
     try {
       if (modalMode === "create") {
-        await jobsApplicationsApi.createRecruiterJob(formData);
+        await jobsApi.createJob(formData);
         showToast(`Position created: "${formData.role}". Campus drive is now open.`);
       } else if (modalMode === "edit" && editingJob) {
-        await jobsApplicationsApi.updateRecruiterJob(editingJob, formData);
+        await jobsApi.updateJob(editingJob.id || editingJob._id, formData);
         showToast(`Position updated: "${formData.role}".`);
       }
       setModalMode(null);
       setSelectedJob(null);
       await loadJobs();
     } catch (error) {
-      showToast(error.message || "Unable to save this position. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to save this position. Please try again.");
     } finally {
       setIsSaving(false);
     }

@@ -9,7 +9,8 @@ import {
   recruiterSummary,
   upcomingInterviews,
 } from "../data/recruiterData.js";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { jobsApi } from "../services/jobsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
 
 export function RecruiterDashboardPage() {
@@ -46,17 +47,49 @@ export function RecruiterDashboardPage() {
     return recentCandidates.filter((can) => can.stage === selectedStage);
   }, [selectedStage]);
 
+  const [metrics, setMetrics] = useState({
+    activeDrives: 0,
+    totalApplicants: 0,
+    shortlistedCount: 0,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([jobsApi.getMyJobs(), applicationsApi.getRecruiterCandidates()])
+      .then(([jobs, candidateData]) => {
+        if (!isMounted) return;
+        const totalApplicants = candidateData?.candidates?.length || 0;
+        const shortlistedCount =
+          candidateData?.candidates?.filter(
+            (c) => c.stage === "Shortlisted" || c.status === "SHORTLISTED"
+          ).length || 0;
+        setMetrics({
+          activeDrives: jobs?.length || 0,
+          totalApplicants,
+          shortlistedCount,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleCreateJobSubmit = async (e) => {
     e.preventDefault();
     if (!newJobTitle.trim()) return;
     setIsCreatingJob(true);
     try {
-      await jobsApplicationsApi.createDashboardJob(newJobTitle.trim(), newJobDept);
+      await jobsApi.createJob({
+        role: newJobTitle.trim(),
+        domain: newJobDept,
+        status: "DRAFT",
+      });
       setActiveModal(null);
       showToast(`Draft position created: "${newJobTitle}". Ready for campus placement review.`);
       setNewJobTitle("");
     } catch (error) {
-      showToast(error.message || "Unable to create the draft position. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to create the draft position. Please try again.");
     } finally {
       setIsCreatingJob(false);
     }
@@ -255,7 +288,7 @@ export function RecruiterDashboardPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#5146E5]" />
           </div>
           <p className="mt-2 font-display text-2xl font-extrabold text-[#0B1020]">
-            {recruiterSummary.openPositions}
+            {metrics.activeDrives || recruiterSummary.openPositions}
           </p>
           <p className="mt-0.5 text-[11px] text-[#56627A]">
             Active recruitment drives
@@ -270,7 +303,7 @@ export function RecruiterDashboardPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
           </div>
           <p className="mt-2 font-display text-2xl font-extrabold text-[#0B1020]">
-            {recruiterSummary.totalCandidates}
+            {metrics.totalApplicants || recruiterSummary.totalCandidates}
           </p>
           <p className="mt-0.5 text-[11px] text-[#56627A]">
             Registered Somaiya applicants
