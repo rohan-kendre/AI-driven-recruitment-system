@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FilterTabs, Toast } from "../components/ui.jsx";
+import { tpoApi } from "../services/tpoApi.js";
 import {
   tpoProfile,
   placementOverview,
@@ -16,6 +17,20 @@ export function TpoDashboardPage() {
   const [selectedDrive, setSelectedDrive] = useState(null);
   const [feedbackToast, setFeedbackToast] = useState(null);
   const [activeTab, setActiveTab] = useState("All"); // 'All' | 'Open' | 'Closing soon'
+  const [realStats, setRealStats] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    tpoApi
+      .getStats()
+      .then((data) => {
+        if (isMounted && data) setRealStats(data);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const showToast = (msg) => {
     setFeedbackToast(msg);
@@ -108,7 +123,7 @@ export function TpoDashboardPage() {
             Active drives
           </span>
           <p className="font-display text-2xl font-bold text-[#0B1020] sm:text-3xl">
-            {drives.length}
+            {realStats?.openJobs ?? drives.length}
           </p>
           <p className="text-[11px] text-[#56627A]">Campus recruitment drives</p>
         </div>
@@ -118,29 +133,29 @@ export function TpoDashboardPage() {
             Students placed
           </span>
           <p className="font-display text-2xl font-bold text-[#16886A] sm:text-3xl">
-            {placementOverview.studentsPlaced}
+            {realStats?.acceptedOffers ?? placementOverview.studentsPlaced}
           </p>
-          <p className="text-[11px] text-[#56627A]">{placementOverview.placedPercentage}</p>
+          <p className="text-[11px] text-[#56627A]">{realStats ? `${realStats.placementRate}% placement rate` : placementOverview.placedPercentage}</p>
         </div>
 
         <div className="rounded-2xl border border-[#E4E7EF] bg-white p-4 sm:p-5 shadow-subtle space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">
-            Interviews this week
+            Interviews conducted
           </span>
           <p className="font-display text-2xl font-bold text-[#0B1020] sm:text-3xl">
-            {placementOverview.interviewsThisWeek}
+            {realStats?.interviewCount ?? placementOverview.interviewsThisWeek}
           </p>
-          <p className="text-[11px] text-[#56627A]">Scheduled across 4 panels</p>
+          <p className="text-[11px] text-[#56627A]">Scheduled campus panels</p>
         </div>
 
         <div className="rounded-2xl border border-[#E4E7EF] bg-white p-4 sm:p-5 shadow-subtle space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">
-            Pending approvals
+            Applications logged
           </span>
           <p className="font-display text-2xl font-bold text-[#5146E5] sm:text-3xl">
-            {attentionItems.filter((i) => !i.resolved).length}
+            {realStats?.totalApplications ?? attentionItems.filter((i) => !i.resolved).length}
           </p>
-          <p className="text-[11px] text-[#56627A]">Items require office review</p>
+          <p className="text-[11px] text-[#56627A]">Recorded across student drives</p>
         </div>
       </section>
 

@@ -223,8 +223,6 @@ export function StudentDashboardPage() {
                 Acme Technologies
               </p>
             </Link>
-
-            {/* Skills*/}
             <Link
               to="/student/offers"
               className="group rounded-xl border border-[#E4E7EF] bg-[#F7F8FC]/50 p-4 transition-all hover:bg-white hover:border-[#5146E5]/40 hover:shadow-2xs cursor-pointer block"
@@ -236,10 +234,10 @@ export function StudentDashboardPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
               </div>
               <p className="mt-2 font-display text-2xl font-extrabold text-[#0B1020] group-hover:text-[#5146E5] transition-colors">
-                {stats.skills}
+                {stats.offers}
               </p>
               <p className="mt-0.5 text-xs text-[#56627A] truncate">
-                python, java, javascript
+                Python, java, cpp
               </p>
             </Link>
           </div>

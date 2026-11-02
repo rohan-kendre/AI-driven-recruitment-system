@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 import { DashboardLayout } from "./layouts/DashboardLayout.jsx";
 import { PublicLayout } from "./layouts/PublicLayout.jsx";
 import { LandingPage, LoginPage, RegisterPage, NotFoundPage } from "./pages/PublicPages.jsx";
@@ -10,6 +11,7 @@ import { RecruiterCandidatesPage } from "./pages/RecruiterCandidatesPage.jsx";
 import { RecruiterInterviewsPage } from "./pages/RecruiterInterviewsPage.jsx";
 import { RecruiterOffersPage } from "./pages/RecruiterOffersPage.jsx";
 import { TpoDashboardPage } from "./pages/TpoDashboardPage.jsx";
+import { TpoPlacementAnalyticsPage } from "./pages/TpoPlacementAnalyticsPage.jsx";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage.jsx";
 import { StudentDashboardPage } from "./pages/StudentDashboardPage.jsx";
 import { StudentProfilePage } from "./pages/StudentProfilePage.jsx";
@@ -38,6 +40,7 @@ const titles = {
   "/recruiter/interviews": "Interviews | NexHire",
   "/recruiter/offers": "Offers | NexHire",
   "/tpo": "Placement Workspace | NexHire",
+  "/tpo/placement-analytics": "Placement Analytics | NexHire",
   "/admin": "Administration | NexHire",
 };
 
@@ -61,22 +64,38 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
         </Route>
         <Route element={<DashboardLayout />}>
-          <Route path="/student" element={<StudentDashboardPage />} />
-          <Route path="/student/profile" element={<StudentProfilePage />} />
-          <Route path="/student/resume" element={<ResumeATSPage />} />
-          <Route path="/student/jobs" element={<StudentJobsPage />} />
-          <Route path="/student/applications" element={<StudentApplicationsPage />} />
-          <Route path="/student/interviews" element={<StudentInterviewsPage />} />
-          <Route path="/student/offers" element={<StudentOffersPage />} />
-          <Route path="/recruiter" element={<RecruiterDashboardPage />} />
-          <Route path="/recruiter/company" element={<RecruiterCompanyPage />} />
-          <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
-          <Route path="/recruiter/candidates" element={<RecruiterCandidatesPage />} />
-          <Route path="/recruiter/applications" element={<RecruiterCandidatesPage />} />
-          <Route path="/recruiter/interviews" element={<RecruiterInterviewsPage />} />
-          <Route path="/recruiter/offers" element={<RecruiterOffersPage />} />
-          <Route path="/tpo" element={<TpoDashboardPage />} />
-          <Route path="/admin" element={<AdminDashboardPage />} />
+          {/* STUDENT routes */}
+          <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+            <Route path="/student" element={<StudentDashboardPage />} />
+            <Route path="/student/profile" element={<StudentProfilePage />} />
+            <Route path="/student/resume" element={<ResumeATSPage />} />
+            <Route path="/student/jobs" element={<StudentJobsPage />} />
+            <Route path="/student/applications" element={<StudentApplicationsPage />} />
+            <Route path="/student/interviews" element={<StudentInterviewsPage />} />
+            <Route path="/student/offers" element={<StudentOffersPage />} />
+          </Route>
+
+          {/* RECRUITER routes */}
+          <Route element={<ProtectedRoute allowedRoles={["RECRUITER"]} />}>
+            <Route path="/recruiter" element={<RecruiterDashboardPage />} />
+            <Route path="/recruiter/company" element={<RecruiterCompanyPage />} />
+            <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
+            <Route path="/recruiter/candidates" element={<RecruiterCandidatesPage />} />
+            <Route path="/recruiter/applications" element={<RecruiterCandidatesPage />} />
+            <Route path="/recruiter/interviews" element={<RecruiterInterviewsPage />} />
+            <Route path="/recruiter/offers" element={<RecruiterOffersPage />} />
+          </Route>
+
+          {/* TPO routes */}
+          <Route element={<ProtectedRoute allowedRoles={["TPO"]} />}>
+            <Route path="/tpo" element={<TpoDashboardPage />} />
+            <Route path="/tpo/placement-analytics" element={<TpoPlacementAnalyticsPage />} />
+          </Route>
+
+          {/* ADMIN routes */}
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+          </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
