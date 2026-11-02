@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 const STAGES = ["All", "Applied", "Screening", "Shortlisted", "Interview", "Offer"];
 
@@ -26,11 +25,11 @@ export function RecruiterCandidatesPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      const data = await jobsApplicationsApi.getRecruiterCandidates();
+      const data = await applicationsApi.getRecruiterCandidates();
       setCandidates(data.candidates);
       setJobs(data.jobs);
     } catch (error) {
-      setLoadError(error.message || "Unable to load candidates. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load candidates. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -78,12 +77,12 @@ export function RecruiterCandidatesPage() {
   const handleAdvanceStage = async (candidateId, nextStage) => {
     setUpdatingCandidateId(candidateId);
     try {
-      await jobsApplicationsApi.updateRecruiterApplicationStatus(candidateId, nextStage);
+      await applicationsApi.updateApplicationStatus(candidateId, nextStage);
       await loadCandidates();
       setSelectedCandidate(null);
       showToast(`Candidate moved to ${nextStage}.`);
     } catch (error) {
-      showToast(error.message || "Unable to update the candidate stage. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to update the candidate stage. Please try again.");
     } finally {
       setUpdatingCandidateId(null);
     }
@@ -92,12 +91,12 @@ export function RecruiterCandidatesPage() {
   const handleDeclineCandidate = async (candidateId) => {
     setUpdatingCandidateId(candidateId);
     try {
-      await jobsApplicationsApi.updateRecruiterApplicationStatus(candidateId, "Rejected");
+      await applicationsApi.updateApplicationStatus(candidateId, "Rejected");
       await loadCandidates();
       setSelectedCandidate(null);
       showToast("Candidate marked as declined for this recruitment drive.");
     } catch (error) {
-      showToast(error.message || "Unable to decline this candidate. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to decline this candidate. Please try again.");
     } finally {
       setUpdatingCandidateId(null);
     }
@@ -148,12 +147,8 @@ export function RecruiterCandidatesPage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E4E7EF] bg-white px-3 py-1 text-xs font-medium text-[#0B1020]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#16886A]" />
-            Somaiya TPO Pool
-          </span>
           <span className="text-xs text-[#56627A]">
-            {candidates.length} Registered
+            {candidates.length} Applicants
           </span>
         </div>
       </section>
@@ -422,21 +417,6 @@ export function RecruiterCandidatesPage() {
 
             {/* Scrollable Drawer Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-[#56627A] bg-[#FAFAFC]">
-              {/* Profile Alignment Strip (Restrained, NOT AI score) */}
-              <div className="rounded-xl border border-[#E4E7EF] bg-white p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#56627A]">
-                    Profile Alignment
-                  </span>
-                  <p className="text-xs text-[#0B1020] mt-0.5">
-                    Skills & requirements match for {selectedCandidate.role}
-                  </p>
-                </div>
-                <span className="font-display text-2xl font-extrabold text-[#5146E5]">
-                  {selectedCandidate.profileAlignment}%
-                </span>
-              </div>
-
               {/* Eligibility Section */}
               <div className="rounded-xl border border-[#E4E7EF] bg-white p-4 space-y-2">
                 <div className="flex items-center justify-between">
@@ -456,7 +436,7 @@ export function RecruiterCandidatesPage() {
                     <p className="font-bold text-[#0B1020] text-xs mt-0.5">
                       {selectedCandidate.cgpa} / 10.00
                     </p>
-                    <p className="text-[10px] text-[#56627A]">Requirement pending backend eligibility rules</p>
+                    <p className="text-[10px] text-[#56627A]">Profile value at application</p>
                   </div>
                   <div>
                     <span className="text-[10px] font-bold uppercase text-[#56627A]">
@@ -465,7 +445,7 @@ export function RecruiterCandidatesPage() {
                     <p className="font-semibold text-[#0B1020] text-xs mt-0.5">
                       {selectedCandidate.branch}
                     </p>
-                    <p className="text-[10px] text-[#16886A]">0 active backlogs</p>
+                    <p className="text-[10px] text-[#56627A]">{selectedCandidate.backlogs ?? "Not recorded"} active backlogs</p>
                   </div>
                 </div>
               </div>
@@ -473,7 +453,7 @@ export function RecruiterCandidatesPage() {
               {/* Verified Technical Skills */}
               <div className="rounded-xl border border-[#E4E7EF] bg-white p-4 space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#5146E5]">
-                  Verified Skills
+                  Profile skills
                 </span>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {selectedCandidate.skills.map((skill) => (
@@ -485,26 +465,6 @@ export function RecruiterCandidatesPage() {
                     </span>
                   ))}
                 </div>
-              </div>
-
-              {/* Resume Card */}
-              <div className="rounded-xl border border-[#E4E7EF] bg-white p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-[#56627A]">
-                    Resume Document
-                  </span>
-                  <p className="font-semibold text-[#0B1020] text-xs mt-0.5">
-                    {selectedCandidate.resume}
-                  </p>
-                  <p className="text-[10px] text-[#56627A]">Verified student upload</p>
-                </div>
-                <Link
-                  to="/student/resume"
-                  target="_blank"
-                  className="rounded-lg border border-[#E4E7EF] bg-[#F7F8FC] px-3 py-1.5 text-xs font-semibold text-[#5146E5] hover:bg-white transition-colors"
-                >
-                  View resume
-                </Link>
               </div>
 
               {/* Application Timeline */}

@@ -16,7 +16,7 @@ This document is the architectural source of truth. Future implementation work m
 - Centralize placement profiles, jobs, applications, interviews, offers, notifications, and reporting.
 - Keep modules independently buildable during Rapid Application Development (RAD), without microservices.
 - Protect personal data and credentials with practical security controls.
-- Use Gemini sparingly, consistently, and only for advisory AI capabilities.
+- Use OpenRouter sparingly for resume ATS advice; decide the mock interview provider when that module is implemented.
 - Keep the UI responsive and the code understandable for a student team.
 
 ## 3. Scope and Delivery Boundaries
@@ -42,7 +42,7 @@ Additional AI providers, richer reporting exports, calendar integration, institu
 | Backend | Node.js, Express.js, Mongoose, Multer | REST API, business services, MongoDB models, uploads |
 | Database | MongoDB Atlas | primary managed document database |
 | Auth | JWT, bcrypt, httpOnly cookies | short access tokens, refresh-token session continuity |
-| AI | Google Gemini API | resume extraction/analysis and mock-interview generation/evaluation |
+| AI | OpenRouter API for resume ATS; Gemini reserved for future mock interviews | server-side advisory analysis and optional practice interviews |
 | Document processing | pdf-parse, mammoth | PDF/DOCX text extraction |
 | Storage | Cloudinary | private resume and generated-offer assets |
 | Email | Nodemailer | transactional notifications and offer delivery |
@@ -61,7 +61,8 @@ flowchart LR
   FE -->|HTTPS REST + credentials| API[Render: Express modular monolith]
   API --> DB[(MongoDB Atlas)]
   API --> CL[Cloudinary]
-  API --> GM[Google Gemini]
+  API --> OR[OpenRouter: resume ATS]
+  API -. future mock interviews .-> GM[Google Gemini]
   API --> EM[Nodemailer / SMTP]
   API -. Phase 2 only .-> J[Judge0]
 ```
@@ -189,16 +190,16 @@ Student endpoints only expose their own profile, resumes, mock sessions, and app
 
 ## 12. AI Architecture
 
-Only `services/aiService.js` (with prompts in a nearby `ai/` or `services/prompts/` folder) may call Gemini. Its conceptual methods are:
+Only `services/aiService.js` (with versioned prompts) may call the configured AI provider. **Decision, 2026-11-03:** resume ATS uses OpenRouter rather than Gemini, as requested for the current implementation. Mock interviews remain a later module and may retain the originally proposed Gemini provider until separately decided. Its conceptual methods are:
 
 - `extractResumeData(text)` — validated structured candidate data.
 - `analyzeResume(text, targetContext)` — ATS score, feedback, and keyword suggestions.
 - `generateInterviewQuestions(domain, level, count)` — complete question set once per session.
 - `evaluateMockInterview(session)` — complete-answer evaluation once after submission.
 
-The service uses versioned prompts, strict JSON response parsing/validation, timeouts, retries only for safe transient failures, concise error mapping, and service-level rate limits. AI output is stored with model/prompt version and creation time. A SHA-256 hash of normalized resume file content is used as the cache key: a matching prior successful analysis can be reused unless the user explicitly requests a new analysis or a materially different job context requires a separate analysis key. Failed calls do not overwrite a last successful result.
+The service uses versioned prompts, strict JSON response parsing/validation, timeouts, retries only for safe transient failures, concise error mapping, and service-level rate limits. AI output is stored with model/prompt version and creation time. A SHA-256 hash of resume content plus a separate target-job context hash is used for cache lookup. Failed calls do not overwrite a last successful result.
 
-AI is advisory only. Gemini never determines job eligibility, application status, candidate rank, shortlisting, rejection, or selection.
+AI is advisory only. OpenRouter never determines job eligibility, application status, candidate rank, shortlisting, rejection, or selection.
 
 ## 13. Resume Processing Flow
 
@@ -208,15 +209,14 @@ flowchart TD
   V -->|invalid| E[Safe validation error]
   V -->|valid| H[Compute content hash]
   H --> C[Check matching successful cached result]
-  C -->|cache hit| S[Persist/reuse resume version and analysis reference]
-  C -->|cache miss| U[Upload private asset to Cloudinary]
-  U --> X[pdf-parse or mammoth extracts text]
-  X --> G[Central AI service: structured extraction + ATS analysis]
-  G --> P[Persist version, extracted data, ATS result in MongoDB]
+  C -->|cache hit| S[Return saved analysis]
+  C -->|cache miss| X[pdf-parse or mammoth extracts text]
+  X --> G[Central AI service: OpenRouter ATS analysis]
+  G --> P[Persist analysis and file metadata in MongoDB]
   P --> R[Return sanitized result to student]
 ```
 
-Multer accepts only PDF and DOCX with server-side file size enforcement (5 MB). The server, not the client, performs extraction and calls Gemini. Cloudinary credentials remain backend-only. Existing versions are retained; one is marked current. Files should use restricted/private delivery where Cloudinary configuration permits, and the API authorizes access before returning a signed download URL or proxying the request.
+Multer accepts only PDF and DOCX with server-side file size enforcement (5 MB). The server, not the client, performs extraction and calls OpenRouter for ATS analysis. **Current slice:** the upload is processed in memory and the analysis plus file metadata is persisted; raw file bytes and extracted text are discarded. Private Cloudinary resume versions/downloads remain a later scope item and must be authorized before delivery.
 
 ## 14. Jobs, Eligibility, Applications, and Ranking
 
@@ -357,7 +357,8 @@ flowchart TB
   B -->|HTTPS + credentials| R[Render: Express API]
   R --> MA[(MongoDB Atlas)]
   R --> CO[Cloudinary]
-  R --> GE[Gemini API]
+  R --> OR[OpenRouter: resume ATS]
+  R -. future mock interviews .-> GE[Gemini API]
   R --> SM[SMTP provider via Nodemailer]
   R -. optional Phase 2 .-> JO[Judge0]
 ```
@@ -376,7 +377,9 @@ JWT_ACCESS_SECRET
 JWT_REFRESH_SECRET
 JWT_ACCESS_EXPIRES_IN
 JWT_REFRESH_EXPIRES_IN
-GEMINI_API_KEY
+OPENROUTER_API_KEY
+OPENROUTER_MODEL
+GEMINI_API_KEY (only if future mock interviews use Gemini)
 CLOUDINARY_CLOUD_NAME
 CLOUDINARY_API_KEY
 CLOUDINARY_API_SECRET
@@ -444,7 +447,7 @@ NexHire will not initially implement microservices, Kubernetes, Docker orchestra
 ## 31. Architectural Risks and Open Decisions
 
 1. **Cross-site refresh cookies:** Vercel and Render deployments require real-browser verification of `SameSite=None; Secure`, credentialed Axios requests, and exact CORS origins. If browser privacy policies materially block this flow, move frontend/API to same-site custom subdomains before changing token storage.
-2. **Gemini quota/structured output:** Prompt payload sizes, rate limits, and JSON consistency must be tested early with sample resumes. Cache successful analyses and show retryable advisory failure states.
+2. **OpenRouter quota/structured output:** Prompt payload sizes, model support for structured responses, rate limits, and JSON consistency must be tested with sample resumes. Cache successful analyses and show retryable advisory failure states.
 3. **Resume privacy:** The institution must decide retention and deletion policy before production. Until then, retain versions for placement traceability and authorize every download.
 4. **Approval ownership:** Default proposed policy is TPO approves students and companies/recruiters; Admin manages TPO/Admin accounts and exceptional platform actions. Confirm this with the college before implementation.
 5. **Ranking without coding tests:** The UI must not present Phase 2 scoring as final. Adopt either available-weight normalization or an explicit incomplete ranking state before exposing recruiter ranking.

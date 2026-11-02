@@ -1,9 +1,8 @@
-import { useState, useMemo, useCallback, useContext, useEffect } from "react";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { jobsApi } from "../services/jobsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 export function StudentJobsPage() {
-  const { user } = useContext(AuthContext);
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -27,13 +26,14 @@ export function StudentJobsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setJobs(await jobsApplicationsApi.getStudentJobs(user));
+      const data = await jobsApi.getJobs();
+      setJobs(data);
     } catch (error) {
-      setLoadError(error.message || "Unable to load opportunities. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load opportunities. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(loadJobs);
@@ -96,12 +96,12 @@ export function StudentJobsPage() {
   const handleApply = async (jobId) => {
     setApplyingJobId(jobId);
     try {
-      await jobsApplicationsApi.createStudentApplication(user, jobId);
+      await applicationsApi.createApplication({ jobId });
       setJobs((prev) => prev.map((job) => (job.id === jobId ? { ...job, applied: true } : job)));
       if (selectedJob?.id === jobId) setSelectedJob((prev) => ({ ...prev, applied: true }));
-      showToast("Application submitted with Active Resume.");
+      showToast("Application submitted with verified academic profile.");
     } catch (error) {
-      showToast(error.message || "Unable to submit the application. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to submit the application. Please try again.");
     } finally {
       setApplyingJobId(null);
     }

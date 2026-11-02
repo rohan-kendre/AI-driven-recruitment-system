@@ -1,10 +1,13 @@
-import { useState, useMemo, useCallback, useEffect, useContext } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { interviewsApi } from "../services/interviewsApi.js";
+
+const displayDate = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
 
 export function StudentInterviewsPage() {
-  const { user } = useContext(AuthContext);
   const [interviews, setInterviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -21,13 +24,18 @@ export function StudentInterviewsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setInterviews(await interviewsOffersApi.getStudentInterviews(user));
+      const data = await interviewsApi.getInterviews();
+      const mapped = data.map((item) => ({
+        ...item,
+        status: item.status === "COMPLETED" ? "Completed" : item.status === "CANCELLED" ? "Cancelled" : "Upcoming",
+      }));
+      setInterviews(mapped);
     } catch (error) {
-      setLoadError(error.message || "Unable to load interviews. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load interviews. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(loadInterviews);
@@ -47,12 +55,14 @@ export function StudentInterviewsPage() {
 
   const upcomingInterviews = useMemo(() => interviews.filter((item) => item.status === "Upcoming"), [interviews]);
   const completedInterviews = useMemo(() => interviews.filter((item) => item.status === "Completed"), [interviews]);
+  const cancelledInterviews = useMemo(() => interviews.filter((item) => item.status === "Cancelled"), [interviews]);
 
   const displayedInterviews = useMemo(() => {
     if (filterTab === "Upcoming") return upcomingInterviews;
     if (filterTab === "Completed") return completedInterviews;
+    if (filterTab === "Cancelled") return cancelledInterviews;
     return interviews;
-  }, [filterTab, upcomingInterviews, completedInterviews, interviews]);
+  }, [filterTab, upcomingInterviews, completedInterviews, cancelledInterviews, interviews]);
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -76,11 +86,11 @@ export function StudentInterviewsPage() {
           <div>
             <h1 className="text-3xl font-bold text-[#0B1020]">Interviews</h1>
             <p className="text-sm text-[#56627A] mt-2">
-              Your scheduled rounds, panel timelines, and focused preparation.
+              Your scheduled rounds and preparation.
             </p>
           </div>
           <div className="flex gap-6 text-xs font-bold text-[#56627A]">
-             {["All", "Upcoming", "Completed"].map((tab) => (
+             {["All", "Upcoming", "Completed", "Cancelled"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFilterTab(tab)}
@@ -96,7 +106,7 @@ export function StudentInterviewsPage() {
       </header>
 
       {/* 2. NEXT INTERVIEW (HERO) */}
-      {nextInterview && filterTab !== "Completed" && (
+      {nextInterview && (filterTab === "All" || filterTab === "Upcoming") && (
         <section className="mt-8 border-b border-[#E4E7EF] pb-8">
           <p className="text-xs font-bold uppercase tracking-widest text-[#5146E5] mb-2">Next up</p>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
@@ -106,7 +116,7 @@ export function StudentInterviewsPage() {
               <div className="flex gap-3 text-sm mt-3 text-[#0B1020] font-medium">
                 <span>{nextInterview.round}</span>
                 <span className="text-[#E4E7EF]">|</span>
-                <span>{nextInterview.date} · {nextInterview.time}</span>
+                <span>{displayDate(nextInterview.date)} · {nextInterview.time}</span>
                 <span className="text-[#E4E7EF]">|</span>
                 <span>{nextInterview.mode}</span>
               </div>
@@ -140,7 +150,7 @@ export function StudentInterviewsPage() {
             </div>
           ) : (
             <div className="space-y-12">
-              {filterTab !== "Completed" && upcomingInterviews.length > 0 && (
+              {(filterTab === "All" || filterTab === "Upcoming") && upcomingInterviews.length > 0 && (
                 <div>
                   <h3 className="text-sm font-bold text-[#0B1020] mb-6 border-b border-[#E4E7EF] pb-2">Upcoming</h3>
                   <div className="space-y-4">
@@ -152,8 +162,7 @@ export function StudentInterviewsPage() {
                       >
                         <div className="flex items-center gap-6">
                           <div className="text-center w-12 shrink-0">
-                            <span className="block text-2xl font-bold text-[#0B1020] group-hover:text-[#5146E5] transition-colors">{item.day}</span>
-                            <span className="block text-[10px] font-bold uppercase tracking-widest text-[#56627A]">{item.month}</span>
+                            <span className="block text-sm font-bold text-[#0B1020] group-hover:text-[#5146E5] transition-colors">{displayDate(item.date)}</span>
                           </div>
                           <div>
                             <h4 className="text-base font-bold text-[#0B1020]">{item.company}</h4>
@@ -170,7 +179,7 @@ export function StudentInterviewsPage() {
                 </div>
               )}
 
-              {filterTab !== "Upcoming" && completedInterviews.length > 0 && (
+              {(filterTab === "All" || filterTab === "Completed") && completedInterviews.length > 0 && (
                 <div>
                   <h3 className="text-sm font-bold text-[#56627A] mb-6 border-b border-[#E4E7EF] pb-2">Completed</h3>
                   <div className="space-y-4">
@@ -182,8 +191,7 @@ export function StudentInterviewsPage() {
                       >
                         <div className="flex items-center gap-6">
                           <div className="text-center w-12 shrink-0 text-[#56627A]">
-                            <span className="block text-2xl font-bold">{item.day}</span>
-                            <span className="block text-[10px] font-bold uppercase tracking-widest">{item.month}</span>
+                            <span className="block text-sm font-bold">{displayDate(item.date)}</span>
                           </div>
                           <div>
                             <h4 className="text-base font-bold text-[#0B1020]">{item.company}</h4>
@@ -193,6 +201,16 @@ export function StudentInterviewsPage() {
                         <span className="text-xs font-bold text-[#56627A] pl-[4.5rem] sm:pl-0">Completed</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+              {(filterTab === "All" || filterTab === "Cancelled") && cancelledInterviews.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-bold text-[#56627A] mb-6 border-b border-[#E4E7EF] pb-2">Cancelled</h3>
+                  <div className="space-y-4">
+                    {cancelledInterviews.map((item) => <button key={item.id} type="button" onClick={() => setSelectedInterview(item)} className="flex w-full justify-between gap-4 py-4 text-left text-sm">
+                      <span>{item.company} · {item.role} · {item.round}</span><span>{displayDate(item.date)} · Cancelled</span>
+                    </button>)}
                   </div>
                 </div>
               )}
@@ -223,9 +241,7 @@ export function StudentInterviewsPage() {
               );
             })}
           </div>
-          <p className="text-[10px] text-[#56627A] mt-8 bg-[#FAFAFC] p-4">
-            Institutional interviews require verified Somaiya college credentials.
-          </p>
+          <p className="text-[10px] text-[#56627A] mt-8 bg-[#FAFAFC] p-4">Check your interview details and prepare for the scheduled round.</p>
         </aside>
       </div>
 
@@ -258,17 +274,11 @@ export function StudentInterviewsPage() {
                 <div className="grid grid-cols-2 gap-y-6">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-[#56627A]">Time</span>
-                    <p className="font-bold mt-1">{selectedInterview.date} at {selectedInterview.time}</p>
-                    <p className="text-xs text-[#56627A]">{selectedInterview.duration}</p>
+                    <p className="font-bold mt-1">{displayDate(selectedInterview.date)} at {selectedInterview.time}</p>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-[#56627A]">Mode</span>
                     <p className="font-bold mt-1">{selectedInterview.mode}</p>
-                    <p className="text-xs text-[#56627A]">{selectedInterview.platform}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-[10px] uppercase font-bold text-[#56627A]">Panel</span>
-                    <p className="font-bold mt-1">{selectedInterview.panel}</p>
                   </div>
                 </div>
               </div>
@@ -278,35 +288,14 @@ export function StudentInterviewsPage() {
                 <p className="leading-relaxed bg-[#F7F8FC] p-4 text-[#0B1020]">{selectedInterview.notes}</p>
               </div>
 
-              <div>
-                <h3 className="font-bold text-xs uppercase tracking-widest text-[#56627A] mb-6">Stage Timeline</h3>
-                <div className="space-y-6 relative before:absolute before:left-[3px] before:top-1.5 before:bottom-1 before:w-[2px] before:bg-[#E4E7EF]">
-                  {selectedInterview.timeline.map((step, idx) => {
-                    const isCompleted = step.state === "completed";
-                    const isCurrent = step.state === "current";
-                    return (
-                      <div key={idx} className="relative pl-6">
-                        <span className={`absolute left-0 top-1.5 w-2 h-2 rounded-full ${isCompleted ? 'bg-[#16886A]' : isCurrent ? 'bg-[#0B1020] ring-4 ring-[#E4E7EF]' : 'bg-[#E4E7EF]'}`} />
-                        <div className="flex justify-between items-baseline gap-4">
-                          <p className={`font-bold ${isCurrent ? "text-[#0B1020]" : "text-[#56627A]"}`}>{step.step}</p>
-                          <span className="text-[10px] text-[#56627A] font-mono">{step.date}</span>
-                        </div>
-                        <p className="text-xs text-[#56627A] mt-1">{step.note}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="rounded-xl border border-[#E4E7EF] p-4 text-sm">
+                <p className="font-bold">Interview status: {selectedInterview.status}</p>
+                {selectedInterview.meetingLink && <a href={selectedInterview.meetingLink} target="_blank" rel="noreferrer" className="mt-2 block text-[#5146E5] underline">Join meeting</a>}
+                {selectedInterview.location && <p className="mt-2">Location: {selectedInterview.location}</p>}
               </div>
             </div>
 
             <div className="p-8 border-t border-[#E4E7EF] bg-white flex flex-col sm:flex-row gap-4">
-               {selectedInterview.status === "Upcoming" && (
-                <Link to="/student/ai-interview" className="flex-1" onClick={() => setSelectedInterview(null)}>
-                  <button className="w-full py-3 bg-[#5146E5] hover:bg-[#4338CA] transition-colors text-white font-bold text-sm">
-                    AI Mock Interview
-                  </button>
-                </Link>
-              )}
               <Link to="/student/applications" className="flex-1" onClick={() => setSelectedInterview(null)}>
                 <button className="w-full py-3 border border-[#E4E7EF] hover:border-[#0B1020] transition-colors text-[#0B1020] font-bold text-sm">
                   View Application

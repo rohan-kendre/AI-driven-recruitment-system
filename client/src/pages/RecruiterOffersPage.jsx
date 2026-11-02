@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { interviewsOffersApi } from "../services/mock/interviewsOffersApi.js";
+import { offersApi } from "../services/offersApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
-const OFFER_STATUS_TABS = ["All", "Awaiting response", "Sent", "Accepted", "Draft", "Declined"];
+const OFFER_STATUS_TABS = ["All", "PENDING", "ACCEPTED", "DECLINED"];
 
 export function RecruiterOffersPage() {
   const [offers, setOffers] = useState([]);
@@ -18,10 +19,10 @@ export function RecruiterOffersPage() {
   // Form state for Create Offer modal
   const [newCandidateId, setNewCandidateId] = useState("");
   const [newRoleId, setNewRoleId] = useState("");
-  const [newStipend, setNewStipend] = useState("₹45,000 / month");
-  const [newCtc, setNewCtc] = useState("18.5 LPA");
-  const [newJoiningDate, setNewJoiningDate] = useState("15 Jan 2027");
-  const [newDeadline, setNewDeadline] = useState("10 Sep 2026");
+  const [newStipend, setNewStipend] = useState("");
+  const [newCtc, setNewCtc] = useState("");
+  const [newJoiningDate, setNewJoiningDate] = useState("");
+  const [newDeadline, setNewDeadline] = useState("");
 
   const showToast = (msg) => {
     setFeedbackToast(msg);
@@ -32,13 +33,24 @@ export function RecruiterOffersPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      const [nextOffers, applications] = await Promise.all([interviewsOffersApi.getRecruiterOffers(), interviewsOffersApi.getRecruiterOfferApplications()]);
-      setOffers(nextOffers);
+      const [nextOffers, candidateData] = await Promise.all([
+        offersApi.getOffers(),
+        applicationsApi.getRecruiterCandidates(),
+      ]);
+      const mappedOffers = nextOffers;
+      const offeredApplicationIds = new Set(nextOffers.map((offer) => offer.applicationId));
+      const applications = (candidateData?.candidates || []).filter((candidate) =>
+        ["SHORTLISTED", "INTERVIEW"].includes(candidate.status) && !offeredApplicationIds.has(candidate.applicationId)
+      ).map((c) => ({
+        applicationId: c.applicationId,
+        candidateName: c.name,
+        role: c.role,
+        jobId: c.jobId,
+      }));
+      setOffers(mappedOffers);
       setOfferApplications(applications);
-      setNewCandidateId((current) => current || applications[0]?.applicationId || "");
-      setNewRoleId((current) => current || applications[0]?.jobId || "");
     } catch (error) {
-      setLoadError(error.message || "Unable to load offers. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load offers. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -68,26 +80,24 @@ export function RecruiterOffersPage() {
     const candidate = offerApplications.find((item) => item.applicationId === newCandidateId);
     setIsSaving(true);
     try {
-      await interviewsOffersApi.createOffer({ applicationId: newCandidateId, stipend: newStipend, ctc: newCtc, joiningDate: newJoiningDate, deadline: newDeadline });
+      await offersApi.createOffer({
+        applicationId: newCandidateId,
+        stipend: newStipend,
+        ctc: newCtc,
+        joiningDate: newJoiningDate,
+        deadline: newDeadline,
+      });
       setCreateModalOpen(false);
+      setNewCandidateId("");
+      setNewRoleId("");
+      setNewStipend("");
+      setNewCtc("");
+      setNewJoiningDate("");
+      setNewDeadline("");
       await loadOffers();
       showToast(`Offer created for ${candidate?.candidateName || "the selected candidate"}.`);
     } catch (error) {
-      showToast(error.message || "Unable to create this offer. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdateStatus = async (offerId, nextStatus) => {
-    setIsSaving(true);
-    try {
-      await interviewsOffersApi.updateOfferStatus(offerId, nextStatus);
-      setSelectedOffer(null);
-      await loadOffers();
-      showToast(`Offer status updated to ${nextStatus}.`);
-    } catch (error) {
-      showToast(error.message || "Unable to update this offer. Please try again.");
+      showToast(error.response?.data?.message || error.message || "Unable to create this offer. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -114,15 +124,11 @@ export function RecruiterOffersPage() {
   // Status badge styling helper
   const getStatusBadgeStyle = (status) => {
     switch (status) {
-      case "Accepted":
+      case "ACCEPTED":
         return "bg-[#F0FDF4] text-[#16886A] border-[#16886A]/20";
-      case "Awaiting response":
-      case "Sent":
+      case "PENDING":
         return "bg-[#5146E5]/10 text-[#5146E5] border-[#5146E5]/20";
-      case "Draft":
-        return "bg-[#F0F2F7] text-[#56627A] border-[#E4E7EF]";
-      case "Declined":
-      case "Expired":
+      case "DECLINED":
         return "bg-rose-50 text-rose-700 border-rose-200";
       default:
         return "bg-[#F7F8FC] text-[#56627A] border-[#E4E7EF]";
@@ -158,7 +164,7 @@ export function RecruiterOffersPage() {
             Offers
           </h1>
           <p className="mt-1 text-sm text-[#56627A]">
-            Draft, release, and track employment offers and candidate acceptance status.
+            Create and track employment offers and candidate acceptance status.
           </p>
         </div>
 
@@ -347,33 +353,20 @@ export function RecruiterOffersPage() {
                   Compensation Structure
                 </p>
                 <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div>
+                  {selectedOffer.stipend && <div>
                     <span className="text-[#8F9CAE] block">Internship Stipend</span>
                     <span className="font-display text-base font-bold text-[#0B1020]">
                       {selectedOffer.stipend}
                     </span>
-                  </div>
+                  </div>}
                   <div>
-                    <span className="text-[#8F9CAE] block">Full-Time Conversion CTC</span>
+                    <span className="text-[#8F9CAE] block">CTC</span>
                     <span className="font-display text-base font-bold text-[#5146E5]">
                       {selectedOffer.ctc}
                     </span>
                   </div>
                 </div>
 
-                {selectedOffer.compensationBreakdown && (
-                  <div className="pt-3 border-t border-[#E4E7EF] space-y-2">
-                    {selectedOffer.compensationBreakdown.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between text-xs text-[#56627A]"
-                      >
-                        <span>{item.label}</span>
-                        <span className="font-semibold text-[#0B1020]">{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Milestones & Dates */}
@@ -409,15 +402,6 @@ export function RecruiterOffersPage() {
                 </div>
               </div>
 
-              {/* Offer Notes */}
-              <div className="rounded-xl border border-[#E4E7EF] p-4 space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#8F9CAE]">
-                  Administrative Notes
-                </p>
-                <p className="text-xs text-[#56627A] leading-relaxed">
-                  {selectedOffer.notes}
-                </p>
-              </div>
             </div>
 
             {/* Sticky Actions Footer */}
@@ -438,33 +422,6 @@ export function RecruiterOffersPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                {selectedOffer.status === "Draft" && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedOffer.id, "Sent")}
-                    className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors shadow-subtle"
-                  >
-                    Release offer
-                  </button>
-                )}
-                {selectedOffer.status === "Sent" && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedOffer.id, "Awaiting response")}
-                    className="rounded-xl border border-[#E4E7EF] px-3.5 py-2 text-xs font-semibold text-[#0B1020] hover:bg-[#F7F8FC]"
-                  >
-                    Mark awaiting response
-                  </button>
-                )}
-                {selectedOffer.status === "Awaiting response" && (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateStatus(selectedOffer.id, "Accepted")}
-                    className="rounded-xl bg-[#16886A] px-4 py-2 text-xs font-semibold text-white hover:bg-[#13745a] transition-colors"
-                  >
-                    Mark accepted
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setSelectedOffer(null)}
@@ -479,7 +436,7 @@ export function RecruiterOffersPage() {
       )}
 
       {/* ============================================================== */}
-      {/* 5. CREATE OFFER MODAL (LOCAL STATE ONLY)                       */}
+      {/* 5. CREATE OFFER MODAL                                         */}
       {/* ============================================================== */}
       {createModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
@@ -493,10 +450,10 @@ export function RecruiterOffersPage() {
                 Campus Recruitment
               </span>
               <h3 className="mt-1 font-display text-xl font-bold text-[#0B1020]">
-                Draft Placement Offer
+                Create Placement Offer
               </h3>
               <p className="mt-1 text-xs text-[#56627A]">
-                Prepare an employment offer for an eligible student. Changes are saved to MockAPI.
+                Prepare an employment offer for an eligible student.
               </p>
             </div>
 
@@ -507,6 +464,7 @@ export function RecruiterOffersPage() {
                     Candidate
                   </label>
                   <select
+                    required
                     value={newCandidateId}
                     onChange={(e) => {
                       const application = offerApplications.find((item) => item.applicationId === e.target.value);
@@ -515,6 +473,7 @@ export function RecruiterOffersPage() {
                     }}
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                   >
+                    <option value="">Select a candidate</option>
                     {offerApplications.map((application) => (
                       <option key={application.applicationId} value={application.applicationId}>
                         {application.candidateName} ({application.role})
@@ -529,14 +488,11 @@ export function RecruiterOffersPage() {
                   </label>
                   <select
                     value={newRoleId}
-                    onChange={(e) => setNewRoleId(e.target.value)}
+                    disabled
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none bg-white"
                   >
-                    {offerApplications.map((application) => (
-                      <option key={application.applicationId} value={application.jobId}>
-                        {application.role}
-                      </option>
-                    ))}
+                    <option value="">Select a position</option>
+                    {offerApplications.filter((application) => application.applicationId === newCandidateId).map((application) => <option key={application.applicationId} value={application.jobId}>{application.role}</option>)}
                   </select>
                 </div>
               </div>
@@ -577,11 +533,10 @@ export function RecruiterOffersPage() {
                     Expected Joining Date
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     required
                     value={newJoiningDate}
                     onChange={(e) => setNewJoiningDate(e.target.value)}
-                    placeholder="e.g. 15 Jan 2027"
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                   />
                 </div>
@@ -591,11 +546,10 @@ export function RecruiterOffersPage() {
                     Decision Deadline
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     required
                     value={newDeadline}
                     onChange={(e) => setNewDeadline(e.target.value)}
-                    placeholder="e.g. 10 Sep 2026"
                     className="w-full rounded-xl border border-[#E4E7EF] px-3 py-2 text-xs focus:border-[#5146E5] focus:outline-none"
                   />
                 </div>
@@ -614,7 +568,7 @@ export function RecruiterOffersPage() {
                   disabled={isSaving || !newCandidateId}
                   className="rounded-xl bg-[#5146E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4338CA] transition-colors shadow-subtle"
                 >
-                  {isSaving ? "Saving…" : "Save draft offer"}
+                  {isSaving ? "Saving…" : "Create offer"}
                 </button>
               </div>
             </form>

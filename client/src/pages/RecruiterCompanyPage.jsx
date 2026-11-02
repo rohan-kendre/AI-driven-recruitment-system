@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
 import { Badge, Button, Toast } from "../components/ui.jsx";
-import { initialCompanyProfile } from "../data/recruiterJobsData.js";
+import { companyApi } from "../services/companyApi.js";
+
+const emptyCompanyProfile = {
+  name: "", legalName: "", tagline: "", location: "", headquarters: "",
+  description: "", industry: "", founded: "", teamSize: "",
+  campusPartner: "", campusTPOStatus: "", liaison: "", website: "",
+};
 
 export function RecruiterCompanyPage() {
-  const [profile, setProfile] = useState(initialCompanyProfile);
+  const [profile, setProfile] = useState(emptyCompanyProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState(null);
 
@@ -17,19 +23,47 @@ export function RecruiterCompanyPage() {
     headquarters: profile.headquarters,
   });
 
+  useEffect(() => {
+    let isMounted = true;
+    companyApi
+      .getMyCompany()
+      .then((data) => {
+        if (!isMounted || !data) return;
+        setProfile((prev) => ({
+          ...prev,
+          name: data.name || prev.name,
+          website: data.website || prev.website,
+          industry: data.industry || prev.industry,
+          location: data.location || prev.location,
+          description: data.description || prev.description,
+          tagline: data.tagline || prev.tagline,
+          headquarters: data.headquarters || prev.headquarters,
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const showToast = (msg) => {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 5000);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    setProfile((prev) => ({
-      ...prev,
-      ...formData,
-    }));
-    setIsEditing(false);
-    showToast("Company profile updated successfully.");
+    try {
+      await companyApi.updateMyCompany(formData);
+      setProfile((prev) => ({
+        ...prev,
+        ...formData,
+      }));
+      setIsEditing(false);
+      showToast("Company profile updated successfully.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to update company profile.");
+    }
   };
 
   // Close modal on Escape
@@ -113,7 +147,7 @@ export function RecruiterCompanyPage() {
                 >
                   {profile.name}
                 </h2>
-                <Badge tone="emerald">Verified Partner</Badge>
+                {profile.name && <Badge tone="emerald">Company profile</Badge>}
               </div>
               <p className="text-sm font-semibold text-[#5146E5]">
                 {profile.tagline}

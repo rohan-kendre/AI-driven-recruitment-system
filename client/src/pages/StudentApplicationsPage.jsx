@@ -1,10 +1,8 @@
-import { useState, useMemo, useCallback, useContext, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { jobsApplicationsApi } from "../services/mock/jobsApplicationsApi.js";
+import { applicationsApi } from "../services/applicationsApi.js";
 
 export function StudentApplicationsPage() {
-  const { user } = useContext(AuthContext);
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -17,13 +15,14 @@ export function StudentApplicationsPage() {
     setIsLoading(true);
     setLoadError("");
     try {
-      setApplications(await jobsApplicationsApi.getStudentApplications(user));
+      const data = await applicationsApi.getMyApplications();
+      setApplications(data);
     } catch (error) {
-      setLoadError(error.message || "Unable to load applications. Please try again.");
+      setLoadError(error.response?.data?.message || error.message || "Unable to load applications. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(loadApplications);
@@ -202,7 +201,7 @@ export function StudentApplicationsPage() {
                 <p className="font-bold text-sm">{selectedApp.nextAction}</p>
                 <p className="mt-1 text-[#56627A]">
                   {selectedApp.stage === "Offer"
-                    ? "Review the formal compensation and internship commitment terms before accepting via Somaiya Placement Office."
+                    ? "Review the formal offer terms and submit your decision from the Offers page."
                     : selectedApp.stage === "Interview"
                       ? "Review core concepts. Ensure your audio and webcam link are tested 10 minutes prior."
                       : "Your application is advancing through routine placement cell verification. No immediate student action required."}
@@ -258,9 +257,9 @@ export function StudentApplicationsPage() {
               <div>
                 <h3 className="font-bold text-xs uppercase tracking-widest text-[#56627A] mb-4">Credentials Submitted</h3>
                 <div className="space-y-2 text-[#0B1020]">
-                  <p className="flex justify-between border-b border-[#E4E7EF] pb-2"><span className="text-[#56627A]">Resume</span> <Link to="/student/resume" className="font-bold text-[#5146E5] hover:underline">{selectedApp.resumeVersion}</Link></p>
-                  <p className="flex justify-between border-b border-[#E4E7EF] pb-2 pt-2"><span className="text-[#56627A]">CGPA</span> <span className="font-bold">{selectedApp.eligibilitySnapshot.cgpa}</span></p>
-                  <p className="flex justify-between pt-2"><span className="text-[#56627A]">Backlogs</span> <span className="font-bold">{selectedApp.eligibilitySnapshot.backlogs}</span></p>
+                  <p className="flex justify-between border-b border-[#E4E7EF] pb-2"><span className="text-[#56627A]">Resume</span> {selectedApp.resumeVersion ? <Link to="/student/resume" className="font-bold text-[#5146E5] hover:underline">{selectedApp.resumeVersion}</Link> : <span>No resume attached</span>}</p>
+                  <p className="flex justify-between border-b border-[#E4E7EF] pb-2 pt-2"><span className="text-[#56627A]">CGPA at application</span> <span className="font-bold">{selectedApp.eligibilitySnapshot?.cgpa ?? "Not recorded"}</span></p>
+                  <p className="flex justify-between pt-2"><span className="text-[#56627A]">Backlogs at application</span> <span className="font-bold">{selectedApp.eligibilitySnapshot?.backlogs ?? "Not recorded"}</span></p>
                 </div>
               </div>
             </div>
