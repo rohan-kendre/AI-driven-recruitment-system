@@ -256,9 +256,10 @@ export function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const isAdmin = location.pathname.startsWith("/admin");
-  const isTpo = !isAdmin && location.pathname.startsWith("/tpo");
-  const isRecruiter = !isAdmin && !isTpo && location.pathname.startsWith("/recruiter");
+  const userRole = user?.role || "STUDENT";
+  const isAdmin = userRole === "ADMIN";
+  const isTpo = userRole === "TPO";
+  const isRecruiter = userRole === "RECRUITER";
   const currentNavItems = isAdmin
     ? adminNavItems
     : isTpo
@@ -417,20 +418,14 @@ export function DashboardLayout() {
           <div className="flex items-center justify-between rounded-xl p-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#5146E5] text-xs font-bold text-white shadow-subtle">
-                {isAdmin ? "AS" : isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
+                {user?.initials || "NH"}
               </span>
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold text-white">
-                  {isAdmin ? "Aditi Sen" : isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
+                  {user?.name || "NexHire User"}
                 </p>
                 <p className="truncate text-[10px] text-slate-400">
-                  {isAdmin
-                    ? "GLOBAL ADMIN · NexHire Platform"
-                    : isTpo
-                      ? "HEAD OF TPO · Somaiya Institutions"
-                      : isRecruiter
-                        ? "RECRUITER · Acme Technologies"
-                        : `${user?.role ?? "STUDENT"} · B.Tech CS`}
+                  {user?.role ? `${user.role} · ${user.email || "Verified"}` : "Authenticated Session"}
                 </p>
               </div>
             </div>
@@ -529,13 +524,13 @@ export function DashboardLayout() {
             <div className="hidden sm:flex items-center gap-2.5">
               <div
                 className="grid h-8 w-8 place-items-center rounded-lg bg-[#EEF0FF] text-xs font-bold text-[#5146E5]"
-                title={isAdmin ? "Admin session" : isTpo ? "TPO session" : isRecruiter ? "Recruiter session" : "Student profile"}
+                title={`${user?.role || "User"} session`}
               >
-                {isAdmin ? "AS" : isTpo ? "KS" : isRecruiter ? "VM" : (user?.initials ?? "AK")}
+                {user?.initials || "NH"}
               </div>
               <div className="text-left">
                 <p className="text-xs font-bold text-[#0B1020] leading-none">
-                  {isAdmin ? "Aditi Sen" : isTpo ? "Prof. K. R. Sharma" : isRecruiter ? "Vikram Malhotra" : (user?.name ?? "Aarav Kulkarni")}
+                  {user?.name || "NexHire User"}
                 </p>
                 <button
                   onClick={logout}

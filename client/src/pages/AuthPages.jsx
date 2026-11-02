@@ -105,6 +105,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -113,13 +114,28 @@ export function LoginPage() {
     formState: { errors },
   } = useForm();
 
-  const submit = () => {
+  const submit = async (formData) => {
     setIsSubmitting(true);
-    setSuccessMsg("Signed in successfully. Redirecting to workspace...");
-    login();
-    setTimeout(() => {
-      navigate("/student");
-    }, 1500);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const loggedInUser = await login(formData.email, formData.password);
+      setSuccessMsg("Signed in successfully. Redirecting to workspace...");
+      const roleRedirects = {
+        STUDENT: "/student",
+        RECRUITER: "/recruiter",
+        TPO: "/tpo",
+        ADMIN: "/admin",
+      };
+      const target = roleRedirects[loggedInUser?.role] || "/student";
+      setTimeout(() => {
+        navigate(target, { replace: true });
+      }, 800);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Invalid email or password.";
+      setErrorMsg(msg);
+      setIsSubmitting(false);
+    }
   };
 
   // Static product fragment for Login
@@ -199,6 +215,18 @@ export function LoginPage() {
           Continue to your placement workspace.
         </p>
       </div>
+
+      {/* Error banner */}
+      {errorMsg && (
+        <div className="mt-5 flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-fadeIn">
+          <div className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-rose-600 text-white text-[10px] font-bold">
+            !
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{errorMsg}</p>
+          </div>
+        </div>
+      )}
 
       {/* Success banner */}
       {successMsg && (
@@ -330,21 +358,37 @@ export function LoginPage() {
 // ============================================================================
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { register: authRegister } = useAuth();
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
-    register,
+    register: formRegister,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
-  const submit = () => {
+  const submit = async (formData) => {
     setIsSubmitting(true);
-    setSuccessMsg("Account created successfully. Redirecting to sign in...");
-    setTimeout(() => {
-      navigate("/login");
-    }, 1500);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await authRegister({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role.toUpperCase(),
+      });
+      setSuccessMsg(res.message || "Account created successfully. Redirecting to sign in...");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Registration failed. Please verify your details.";
+      setErrorMsg(msg);
+      setIsSubmitting(false);
+    }
   };
 
   // Static product fragment for Register
@@ -439,6 +483,18 @@ export function RegisterPage() {
         </p>
       </div>
 
+      {/* Error banner */}
+      {errorMsg && (
+        <div className="mt-5 flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700 animate-fadeIn">
+          <div className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-rose-600 text-white text-[10px] font-bold">
+            !
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{errorMsg}</p>
+          </div>
+        </div>
+      )}
+
       {/* Success banner */}
       {successMsg && (
         <div className="mt-5 flex items-center gap-3 rounded-xl border border-[#16886A]/20 bg-[#E8F6F1] p-3.5 text-xs text-[#16886A] animate-fadeIn">
@@ -484,7 +540,7 @@ export function RegisterPage() {
                 ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100 focus:outline-none"
                 : "border-[#E4E7EF] focus:border-[#5146E5] focus:ring-2 focus:ring-[#EEF0FF] focus:outline-none"
             }`}
-            {...register("name", {
+            {...formRegister("name", {
               required: "Full Name is required",
               minLength: {
                 value: 2,
@@ -514,7 +570,7 @@ export function RegisterPage() {
                 ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100 focus:outline-none"
                 : "border-[#E4E7EF] focus:border-[#5146E5] focus:ring-2 focus:ring-[#EEF0FF] focus:outline-none"
             }`}
-            {...register("email", {
+            {...formRegister("email", {
               required: "Email is required",
               pattern: {
                 value: /^\S+@\S+$/i,
@@ -544,7 +600,7 @@ export function RegisterPage() {
                 ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100 focus:outline-none"
                 : "border-[#E4E7EF] focus:border-[#5146E5] focus:ring-2 focus:ring-[#EEF0FF] focus:outline-none"
             }`}
-            {...register("password", {
+            {...formRegister("password", {
               required: "Password is required",
               minLength: {
                 value: 6,
@@ -574,7 +630,7 @@ export function RegisterPage() {
                 ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100 focus:outline-none"
                 : "border-[#E4E7EF] focus:border-[#5146E5] focus:ring-2 focus:ring-[#EEF0FF] focus:outline-none"
             }`}
-            {...register("confirmPassword", {
+            {...formRegister("confirmPassword", {
               required: "Confirm Password is required",
               validate: (value, formValues) =>
                 value === formValues.password || "Passwords do not match",
@@ -600,13 +656,11 @@ export function RegisterPage() {
                   ? "border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100 focus:outline-none"
                   : "border-[#E4E7EF] focus:border-[#5146E5] focus:ring-2 focus:ring-[#EEF0FF] focus:outline-none"
               }`}
-              {...register("role", { required: "Role is required" })}
+              {...formRegister("role", { required: "Role is required" })}
             >
               <option value="">Select your role...</option>
               <option value="Student">Student (Placement Candidate)</option>
               <option value="Recruiter">Recruiter (Hiring Partner)</option>
-              <option value="TPO">TPO (Training &amp; Placement Officer)</option>
-              <option value="Admin">Admin (System Administrator)</option>
             </select>
             {/* Custom chevron */}
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
@@ -627,7 +681,7 @@ export function RegisterPage() {
           </div>
           <FieldError error={errors.role} />
           <p className="mt-1 text-[11px] text-[#9DA8BC]">
-            Your role determines your workspace tools and drive access.
+            Your role determines your workspace tools and drive access. TPO & Admin access is provisioned by the institution.
           </p>
         </div>
 

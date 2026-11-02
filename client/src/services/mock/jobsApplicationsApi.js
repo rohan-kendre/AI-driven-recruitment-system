@@ -41,23 +41,28 @@ async function getAll(type) {
 
 export async function resolveStudent(currentUser) {
   const users = await usersApi.getUsers({ page: 1, limit: 100 });
-  const user = users.find((candidate) => candidate.role === "STUDENT" && candidate.name === currentUser?.name);
+  const user =
+    users.find((candidate) => candidate.role === "STUDENT" && (candidate.name === currentUser?.name || candidate.email === currentUser?.email)) ||
+    users.find((candidate) => candidate.role === "STUDENT");
   if (!user) throw new Error("The current student demo account could not be found in MockAPI.");
 
   const students = await getAll("student");
-  const student = students.find((candidate) => candidate.userId === user.id);
+  const student = students.find((candidate) => candidate.userId === user.id) || students[0];
   if (!student) throw new Error("The current student profile could not be found in MockAPI.");
   return student;
 }
 
-export async function resolveRecruiter() {
+export async function resolveRecruiter(currentUser) {
   const users = await usersApi.getUsers({ page: 1, limit: 100 });
-  const user = users.find((candidate) => candidate.role === "RECRUITER" && candidate.name === TEMP_RECRUITER_NAME);
+  const user =
+    users.find((candidate) => candidate.role === "RECRUITER" && (candidate.name === currentUser?.name || candidate.email === currentUser?.email)) ||
+    users.find((candidate) => candidate.role === "RECRUITER" && candidate.name === TEMP_RECRUITER_NAME) ||
+    users.find((candidate) => candidate.role === "RECRUITER");
   if (!user) throw new Error("The temporary recruiter account could not be found in MockAPI.");
 
   const [recruiters, companies] = await Promise.all([getAll("recruiter"), getAll("company")]);
-  const recruiter = recruiters.find((candidate) => candidate.userId === user.id);
-  const company = companies.find((candidate) => candidate.recruiterId === recruiter?.id);
+  const recruiter = recruiters.find((candidate) => candidate.userId === user.id) || recruiters[0];
+  const company = companies.find((candidate) => candidate.recruiterId === recruiter?.id) || companies[0];
   if (!recruiter || !company) throw new Error("The temporary recruiter company context is incomplete in MockAPI.");
   return { recruiter, company };
 }
